@@ -71,9 +71,9 @@ rownames(Yang_sub_bulk_tumor) <- Yang_sub_annotLookUp$hgnc_symbol[which(!is.na(Y
 ## remove non-unique genes
 Yang_sub_bulk_tumor <- Yang_sub_bulk_tumor[!duplicated(rownames(Yang_sub_bulk_tumor)),]
 
-write.table(Yang_sub_bulk_tumor, file = "/home/fattohim/Masterthesis/Data/Bulk/Yang/Yang_bulk.tsv", 
+write.table(Yang_sub_bulk_tumor, file = "/home/fattohim/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_bulk.tsv", 
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
-write.table(Yang_metadata_tumor, file = "/home/fattohim/Masterthesis/Data/Bulk/Yang/Yang_metadata.tsv",
+write.table(Yang_metadata_tumor, file = "/home/fattohim/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_metadata.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
-saveRDS(Yang_sub_bulk_tumor, file = "/home/fattohim/Masterthesis/Data/Bulk/Yang/Yang_bulk.RDS")
-saveRDS(Yang_metadata_tumor, file = "/home/fattohim/Masterthesis/Data/Bulk/Yang/Yang_metadata.RDS")
+saveRDS(Yang_sub_bulk_tumor, file = "/home/fattohim/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_bulk.RDS")
+saveRDS(Yang_metadata_tumor, file = "/home/fattohim/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_metadata.RDS")
