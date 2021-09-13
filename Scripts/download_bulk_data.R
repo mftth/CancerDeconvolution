@@ -1,10 +1,19 @@
-# downloading bulk PDAC
+## Mastherthesis, Melanie Fattohi
+## download bulk RNA-seq datasets from different sources
+## bulk RNA-seq of common cancers and their meta data (specifically tumor grading)
+## pancreatic ductal adenocarcinoma (PDAC)
+## invasive ductal carcinoma (IDC) (breast cancer)
+## adenocarcinoma of the lung (e.g. NSCLC)
+## colorectal adenocarcinoma (CRA)
+## head and neck squamous cell carcinoma (HNSCC)
 
 library(tidyverse)
 library(GEOquery)
 library(HelpersMG)
 
-# PACA-CA
+#################### PDAC ####################
+
+## PACA-CA
 setwd("/home/fattohim/Masterthesis/Data/Bulk/PACA_CA")
 HelpersMG::wget("https://dcc.icgc.org/api/v1/download?fn=/release_27/Projects/PACA-CA/exp_seq.PACA-CA.tsv.gz")
 gunzip("/home/fattohim/Masterthesis/Data/Bulk/PACA_CA/exp_seq.PACA-CA.tsv.gz")
@@ -17,7 +26,7 @@ PACA_CA <- read.table("/home/fattohim/Masterthesis/Data/Bulk/PACA_CA/simple_soma
                         header = TRUE, sep = "\t")
 
 
-# PACA-AU
+## PACA-AU
 setwd("/home/fattohim/Masterthesis/Data/Bulk/PACA_AU")
 HelpersMG::wget("https://dcc.icgc.org/api/v1/download?fn=/current/Projects/PACA-AU/exp_array.PACA-AU.tsv.gz")
 gunzip("/home/fattohim/Masterthesis/Data/Bulk/PACA_AU/exp_array.PACA-AU.tsv.gz")
@@ -27,11 +36,10 @@ PACA_AU <- read.table("/home/fattohim/Masterthesis/Data/Bulk/PACA_AU/exp_array.P
 
 ## Yang, 2016, GSE62452, microarray, 69 samples
 setwd("/home/fattohim/Masterthesis/Data/Bulk/Yang")
-## sequencing and bulk data
 HelpersMG::wget("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE62nnn/GSE62452/matrix/GSE62452_series_matrix.txt.gz")
 gunzip("/home/fattohim/Masterthesis/Data/Bulk/Yang/GSE62452_series_matrix.txt.gz")
-%Yang_metadata <- read.table("/home/fattohim/Masterthesis/Data/Bulk/Yang/GSE62452_series_matrix.txt",
-%                            header = FALSE, sep = "\t")
+#Yang_metadata <- read.table("/home/fattohim/Masterthesis/Data/Bulk/Yang/GSE62452_series_matrix.txt",
+#                            header = FALSE, sep = "\t")
 Yang <- getGEO(filename="/home/fattohim/Masterthesis/Data/Bulk/Yang/GSE62452_series_matrix.txt")
 Yang_metadata <- pData(Yang)
 Yang_metadata_tumor <- Yang_metadata[which(Yang_metadata$'tissue:ch1'== 'Pancreatic tumor'),]
@@ -50,6 +58,7 @@ Yang_bulk_tumor <- Yang_bulk[, match(rownames(Yang_metadata_tumor),colnames(Yang
 #require(hugene10sttranscriptcluster.db)
 #Yang_annotLookup <- select(hugene10sttranscriptcluster.db, keys = rownames(Yang_bulk_tumor),
 #  columns = c('PROBEID', 'ENSEMBL', 'SYMBOL'))
+
 library(biomaRt)
 mart <- useDataset("hsapiens_gene_ensembl", useMart("ENSEMBL_MART_ENSEMBL"))
 Yang_annotLookUp <- getBM(filters = "affy_hugene_1_0_st_v1", 
@@ -59,7 +68,7 @@ Yang_annotLookUp <- getBM(filters = "affy_hugene_1_0_st_v1",
 Yang_sub_annotLookUp <- Yang_annotLookUp[match(rownames(Yang_bulk_tumor), Yang_annotLookUp$affy_hugene_1_0_st_v1),]
 Yang_sub_bulk_tumor <- Yang_bulk_tumor[which(!is.na(Yang_sub_annotLookUp$affy_hugene_1_0_st_v1)),]
 rownames(Yang_sub_bulk_tumor) <- Yang_sub_annotLookUp$hgnc_symbol[which(!is.na(Yang_sub_annotLookUp$hgnc_symbol))]
-# remove non-unique genes
+## remove non-unique genes
 Yang_sub_bulk_tumor <- Yang_sub_bulk_tumor[!duplicated(rownames(Yang_sub_bulk_tumor)),]
 
 write.table(Yang_sub_bulk_tumor, file = "/home/fattohim/Masterthesis/Data/Bulk/Yang/Yang_bulk.tsv", 
