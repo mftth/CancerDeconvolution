@@ -1,7 +1,7 @@
 ## Mastherthesis, Melanie Fattohi
 ## test previously trained Random Forest model regarding predicting tumor grading
-## model saved in /home/fattohim/Praktikum/ML_RF_SC2.RData
-## bulk RNA-seq data to be tested saved in /home/fattohim/Masterthesis/CancerDeconvolution/Data/Bulk/*
+## model saved in ~/Praktikum/ML_RF_SC2.RData
+## bulk RNA-seq data to be tested saved in ~/Masterthesis/CancerDeconvolution/Data/Bulk/*
 ## evaluate prediction by means of accuracy, sensitivity and specificity
 ## perform feature importance 
 
@@ -15,7 +15,7 @@ library(SCDC)
 set.seed(1)
 
 ## load workspace of internship containing the RF ML model
-load("/home/fattohim/Masterthesis/Workspaces/Prak_RF_ML_model.RData")
+load("~/Masterthesis/Workspaces/Prak_RF_ML_model.RData")
 
 ## retrain the RF models for exocrine model
 ## (models were not saved in internship)  
@@ -118,8 +118,8 @@ test_int_ML_model <- function(decon_bulk, grading_vec, ensemble) {
 
 ## Yang, 2016, GSE62452, microarray, 69 samples
 ## read bulk data +  meta data of Yang
-Yang_bulk <- readRDS(file = "/home/fattohim/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_bulk.RDS")
-Yang_metadata <- readRDS(file = "/home/fattohim/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_metadata.RDS")
+Yang_bulk <- readRDS(file = "~/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_bulk.RDS")
+Yang_metadata <- readRDS(file = "~/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_metadata.RDS")
 
 ## perform deconvolution of Yang with SCDC(Baron)/ENSEMBLE 
 ## remove Gx and G4 samples
@@ -133,14 +133,14 @@ fdata_Yang <- rownames(Yang_bulk)
 pdata_Yang <- cbind(cellname = rownames(Yang_metadata), subjects = Yang_metadata$'grading:ch1')
 eset_bulk <- getESET(Yang_bulk, fdata = fdata_Yang, pdata = pdata_Yang)
 ## SCDC deconvolution
-qc_baron_exo <- readRDS("/home/fattohim/Praktikum/Deko_SCDC/Training_Data/Baron_qc_exo.RDS")
+qc_baron_exo <- readRDS("~/Praktikum/Deko_SCDC/Training_Data/Baron_qc_exo.RDS")
 
 Yang_scdc_baron <- SCDC_prop(bulk.eset = eset_bulk, sc.eset = qc_baron_exo$sc.eset.qc, 
                                       ct.varname = "cluster", sample = "sample", 
                                       ct.sub = c("alpha","beta","delta","gamma", "acinar", "ductal"))                               
 ## ENSEMBLE deconvolution
-qc_lawlor_exo <- readRDS("/home/fattohim/Praktikum/Deko_SCDC/Training_Data/Lawlor_qc_exo.RDS")
-qc_segerstolpe_exo <- readRDS("/home/fattohim/Praktikum/Deko_SCDC/Training_Data/Segerstolpe_qc_exo.RDS")
+qc_lawlor_exo <- readRDS("~/Praktikum/Deko_SCDC/Training_Data/Lawlor_qc_exo.RDS")
+qc_segerstolpe_exo <- readRDS("~/Praktikum/Deko_SCDC/Training_Data/Segerstolpe_qc_exo.RDS")
 pancreas_ref_exo <- list(baron = qc_baron_exo$sc.eset.qc,
                           seger = qc_segerstolpe_exo$sc.eset.qc,
                           lawlor = qc_lawlor_exo$sc.eset.qc)
@@ -161,12 +161,12 @@ Yang_ensemble_pred <- test_int_ML_model(decon_bulk = Yang_ensemble,
                                         ensemble = TRUE)
 
 ## save results
-write.table(Yang_scdc_baron_pred$summary, file = "/home/fattohim/Masterthesis/CancerDeconvolution/Results/Prak_grading_prediction/Yang_scdc_baron_pred.tsv",
+write.table(Yang_scdc_baron_pred$summary, file = "~/Masterthesis/CancerDeconvolution/Results/Prak_grading_prediction/Yang_scdc_baron_pred.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
-saveRDS(Yang_scdc_baron_pred, file = "/home/fattohim/Masterthesis/CancerDeconvolution/Results/Prak_grading_prediction/Yang_scdc_baron_pred.RDS")
+saveRDS(Yang_scdc_baron_pred, file = "~/Masterthesis/CancerDeconvolution/Results/Prak_grading_prediction/Yang_scdc_baron_pred.RDS")
 
-write.table(Yang_ensemble_pred$summary, file = "/home/fattohim/Masterthesis/CancerDeconvolution/Results/Prak_grading_prediction/Yang_ensemble_pred.tsv",
+write.table(Yang_ensemble_pred$summary, file = "~/Masterthesis/CancerDeconvolution/Results/Prak_grading_prediction/Yang_ensemble_pred.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
-saveRDS(Yang_ensemble_pred, file = "/home/fattohim/Masterthesis/CancerDeconvolution/Results/Prak_grading_prediction/Yang_ensemble_pred.RDS")
+saveRDS(Yang_ensemble_pred, file = "~/Masterthesis/CancerDeconvolution/Results/Prak_grading_prediction/Yang_ensemble_pred.RDS")
 
 
