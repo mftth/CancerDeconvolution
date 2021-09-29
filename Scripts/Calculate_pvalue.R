@@ -25,57 +25,58 @@ get_ensemble_res <- function(ensemble_output){
   return(ensemble_res)
 }
 
+get_spearman_vec <- function(decon_res){
+  if(is.null(decon_res$ensemble_res)){
+    decon_res <- decon_res$scdc_res
+  } else if(is.null(decon_res$scdc_res)){
+    decon_res <- get_ensemble_res(decon_res$ensemble_res)
+  }
+  spearman_vec <- decon_res$yeval$spearmany.sample.table
+  return(spearman_vec)
+}
 
 ## g = #genes that are present in both bulk and scrna
-sample_bulk <- function(g, bulk_data, ...){#g = NULL, ...){
+get_spearman_decon_sampled_bulk <- function(g, bulk_data, ...){
   ## generate sampled bulk_data
-  if(is.null(g)){
-    message("g cannot be NULL!")
-    #sc_data <- readRDS(file = sc_path)
-    #g <- unname(nrow(sc_data$sc.eset.qc@featureData))
-  }
-
   sampled_genes <- sample(rownames(bulk_data), g)
   sampled_bulk <- bulk_data[match(sampled_genes, rownames(bulk_data)),]
   
   ## perform decon of sampled bulk_data with Deconvolve_SCDC
-  deco_res <- Deconvolve_SCDC(bulk_data = sampled_bulk, ...)
+  message(paste("Number of gene in sampled bulk dataset: ", g, sep = ""))
+  decon_res <- Deconvolve_SCDC(bulk_data = sampled_bulk, ...)
+  #decon_res <- decon_res[[which(!sapply(decon_res, is.null))]]
   
-  if(is.null(deco_res$ensemble_res)){
-     
-    spearman_vec <- as.vector(deco_res$scdc_res$yeval$spearmany.sample.table)
-    
-  } else if(is.null(deco_res$scdc_res)){
-    
-    deco_res_ensemble <- get_ensemble_res(deco_res$ensemble_res)
-    spearman_vec <- as.vector(deco_res_ensemble$yeval$spearmany.sample.table)
-  }
+  spearman_vec <- get_spearman_vec(decon_res)
+  
   ## output: Spearman correlation
-  return(list("spearman_vec" = spearman_vec))
+  return(spearman_vec)
 }
 
 
 
 Calculate_pvalue <- function(g = NULL, bulk_data, ...) { 
   ## g is a vector of integers
-  
   message("Executing deconvolution with the whole bulk RNA-seq dataset ..")
-  deco_res <- Deconvolve_SCDC(bulk_data, bulk_meta, sc_path, cell_types, ensemble, multiple_donors)
+  decon_res <- Deconvolve_SCDC(bulk_data, ...)
   
   if(is.null(g)){
     message("g cannot be NULL!")
-    param_list = list("g" = c(5000, 10000, 15000))#, bulk_data = bulk_data) 
-  } else {
-    param_list = list("g" = g, bulk_data = bulk_data) 
-  }
+    g = c(5000, 10000, 15000)
+  } 
   
-  message("Create Monte Carlo simulation for calculation of p-value. This step takes some time ..")
-  MC_result <- MonteCarlo(func=sample_bulk, nrep = 10, param_list = param_list, ncpus = 5) 
   
-  ## get the R's from MC_result (nulldist) vector/matrix
+  ## executing get_spearman_decon_sampled_bulk() for multiple g's, each 500 times
+  ## (imitating a Monte Carlo simulation) 
+  message("Calculation of p-value. This step takes some time ..")
+  spearman_matrix_sampled <- sapply(g, function(x) get_spearman_decon_sampled_bulk(x, bulk_data = bulk_data, ...))
+  #param_list <- list("g" = g, "bulk_data" = bulk_data)
+  #MC_result <- MonteCarlo(func=sample_bulk, nrep = 500, param_list = param_list, ncpus = 5) 
+
   ## get the R's from deco_res (mix_r) vector
-  ## pval = pval <- 1 - (which.min(abs(nulldist - mix_r)) / length(nulldist))
+  spearman_vec_whole <- decon_res
+  p_value <- 1 - (which.min(abs(spearman_matrix_sampled - spearman_vec_whole)) / length(spearman_matrix_sampled))
   
-  ## return pval and deco_res
+  ## return pval (mach noch bisschen schoener) and deco_res
+  return("decon_res" = decon_res, "p_value" = p_value)
   
 } 
