@@ -17,6 +17,7 @@
 
 library(SCDC)
 library(MonteCarlo)
+library(parallel)
 
 ## write utility function that calcs the ensemble prediction with highest mean weight
 get_ensemble_res <- function(ensemble_output){
@@ -31,7 +32,7 @@ get_spearman_vec <- function(decon_res){
   } else if(is.null(decon_res$scdc_res)){
     decon_res <- get_ensemble_res(decon_res$ensemble_res)
   }
-  spearman_vec <- decon_res$yeval$spearmany.sample.table
+  spearman_vec <- as.vector(decon_res$yeval$spearmany.sample.table)
   return(spearman_vec)
 }
 
@@ -42,7 +43,7 @@ get_spearman_decon_sampled_bulk <- function(g, bulk_data, ...){
   sampled_bulk <- bulk_data[match(sampled_genes, rownames(bulk_data)),]
   
   ## perform decon of sampled bulk_data with Deconvolve_SCDC
-  message(paste("Number of gene in sampled bulk dataset: ", g, sep = ""))
+  message(paste("Number of genes in sampled bulk dataset: ", g, sep = ""))
   decon_res <- Deconvolve_SCDC(bulk_data = sampled_bulk, ...)
   #decon_res <- decon_res[[which(!sapply(decon_res, is.null))]]
   
@@ -54,29 +55,28 @@ get_spearman_decon_sampled_bulk <- function(g, bulk_data, ...){
 
 
 
-Calculate_pvalue <- function(g = NULL, bulk_data, ...) { 
-  ## g is a vector of integers
+Calculate_pvalue <- function(g = c(5000, 10000, 15000), nrep = 500, ncores = 15, bulk_data, ...) { 
+  
+  ## Deconvolution of whole bulk RNA-seq dataset
   message("Executing deconvolution with the whole bulk RNA-seq dataset ..")
   decon_res <- Deconvolve_SCDC(bulk_data, ...)
+  spearman_vec_whole <- get_spearman_vec(decon_res)
   
-  if(is.null(g)){
-    message("g cannot be NULL!")
-    g = c(5000, 10000, 15000)
-  } 
-  
-  
-  ## executing get_spearman_decon_sampled_bulk() for multiple g's, each 500 times
-  ## (imitating a Monte Carlo simulation) 
+  ## Deconvolution of sampled bulk RNA-seq dataset
   message("Calculation of p-value. This step takes some time ..")
-  spearman_matrix_sampled <- sapply(g, function(x) get_spearman_decon_sampled_bulk(x, bulk_data = bulk_data, ...))
+  spearman_matrix_sampled <- 
+    do.call(cbind, mclapply(1:nrep, function(x) sapply(g, 
+                                                       function(y) get_spearman_decon_sampled_bulk(y, 
+                                                                                                   bulk_data = bulk_data, ...)), 
+                            mc.cores = ncores))
   #param_list <- list("g" = g, "bulk_data" = bulk_data)
   #MC_result <- MonteCarlo(func=sample_bulk, nrep = 500, param_list = param_list, ncpus = 5) 
 
-  ## get the R's from deco_res (mix_r) vector
-  spearman_vec_whole <- decon_res
+  ## calculating p-value
   p_value <- 1 - (which.min(abs(spearman_matrix_sampled - spearman_vec_whole)) / length(spearman_matrix_sampled))
-  
-  ## return pval (mach noch bisschen schoener) and deco_res
-  return("decon_res" = decon_res, "p_value" = p_value)
+  message("Done.")
+
+  decon_res_pval <- list("decon_res" = decon_res, "p_value" = p_value)
+  return(decon_res_pval)
   
 } 
