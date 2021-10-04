@@ -16,7 +16,7 @@
 ### SCDC object with predicted cell type proportions and reconstruction error and p-value
 
 library(SCDC)
-library(MonteCarlo)
+#library(MonteCarlo)
 library(parallel)
 
 ## write utility function that calcs the ensemble prediction with highest mean weight
@@ -36,8 +36,19 @@ get_spearman_vec <- function(decon_res){
   return(spearman_vec)
 }
 
+get_pearson_vec <- function(bulk_data, decon_res){
+  if(is.null(decon_res$ensemble_res)){
+    decon_res <- decon_res$scdc_res
+  } else if(is.null(decon_res$scdc_res)){
+    decon_res <- get_ensemble_res(decon_res$ensemble_res)
+  }
+  bulk_data_est <- decon_res$basis.mvw  %*% t(decon_res$prop.est.mvw)
+  pearson_vec <- sapply(1:ncol(bulk_data), function(x) cor(bulk_data[,x], bulk_data_est[,x]))
+  return(pearson_vec)
+}
+
 ## g = #genes that are present in both bulk and scrna
-get_spearman_decon_sampled_bulk <- function(g, bulk_data, ...){
+get_statistic_decon_sampled_bulk <- function(g, bulk_data, ...){
   ## generate sampled bulk_data
   sampled_genes <- sample(rownames(bulk_data), g)
   sampled_bulk <- bulk_data[match(sampled_genes, rownames(bulk_data)),]
@@ -47,33 +58,37 @@ get_spearman_decon_sampled_bulk <- function(g, bulk_data, ...){
   decon_res <- Deconvolve_SCDC(bulk_data = sampled_bulk, ...)
   #decon_res <- decon_res[[which(!sapply(decon_res, is.null))]]
   
-  spearman_vec <- get_spearman_vec(decon_res)
+  spearman_vec <- get_spearman_vec(decon_res = decon_res)
+  pearson_vec <- get_pearson_vec(bulk_data = sampled_bulk, decon_res = decon_res)
   
+  statistics <- list(spearman_vec, pearson_vec)
   ## output: Spearman correlation
-  return(spearman_vec)
+  return(statistics)
 }
 
 
-
-Calculate_pvalue <- function(g = c(5000, 10000, 15000), nrep = 500, ncores = 15, bulk_data, ...) { 
+Calculate_pvalue <- function(g = c(5000, 10000, 15000), nrep = 500, ncores = 5, silent = TRUE, bulk_data, ...) { 
   
   ## Deconvolution of whole bulk RNA-seq dataset
   message("Executing deconvolution with the whole bulk RNA-seq dataset ..")
   decon_res <- Deconvolve_SCDC(bulk_data, ...)
-  spearman_vec_whole <- get_spearman_vec(decon_res)
+  spearman_vec_whole <- get_spearman_vec(decon_res = decon_res)
+  pearson_vec_whole <- get_pearson_vec(bulk_data = bulk_data, decon_res = decon_res)
   
   ## Deconvolution of sampled bulk RNA-seq dataset
   message("Calculation of p-value. This step takes some time ..")
   spearman_matrix_sampled <- 
     do.call(cbind, mclapply(1:nrep, function(x) sapply(g, 
-                                                       function(y) get_spearman_decon_sampled_bulk(y, 
+                                                       function(y) get_statistic_decon_sampled_bulk(y, 
                                                                                                    bulk_data = bulk_data, ...)), 
-                            mc.cores = ncores))
+                            mc.cores = ncores, mc.silent = silent))
+  spearman_matrix_sampled <- apply(spearman_matrix_sampled, MARGIN= 2, FUN = sort)
   #param_list <- list("g" = g, "bulk_data" = bulk_data)
   #MC_result <- MonteCarlo(func=sample_bulk, nrep = 500, param_list = param_list, ncpus = 5) 
 
   ## calculating p-value
-  p_value <- 1 - (which.min(abs(spearman_matrix_sampled - spearman_vec_whole)) / length(spearman_matrix_sampled))
+  p_value <- apply(spearman_matrix_sampled, MARGIN = 2, function(x) {
+    1 - (which.min(abs(x - spearman_vec_whole)) / length(spearman_matrix_sampled))})
   message("Done.")
 
   decon_res_pval <- list("decon_res" = decon_res, "p_value" = p_value)
