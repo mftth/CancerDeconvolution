@@ -47,6 +47,7 @@ get_pearson_vec <- function(bulk_data, decon_res){
   return(pearson_vec)
 }
 
+
 ## g = #genes that are present in both bulk and scrna
 get_statistic_decon_sampled_bulk <- function(g, bulk_data, ...){
   ## generate sampled bulk_data
@@ -59,39 +60,61 @@ get_statistic_decon_sampled_bulk <- function(g, bulk_data, ...){
   #decon_res <- decon_res[[which(!sapply(decon_res, is.null))]]
   
   spearman_vec <- get_spearman_vec(decon_res = decon_res)
-  pearson_vec <- get_pearson_vec(bulk_data = sampled_bulk, decon_res = decon_res)
+  pearson_vec <- 1#get_pearson_vec(bulk_data = sampled_bulk, decon_res = decon_res)
   
-  statistics <- list(spearman_vec, pearson_vec)
+  statistics <- list("spearman_vec" = spearman_vec, "pearson_vec" = pearson_vec)
   ## output: Spearman correlation
   return(statistics)
 }
 
 
-Calculate_pvalue <- function(g = c(5000, 10000, 15000), nrep = 500, ncores = 5, silent = TRUE, bulk_data, ...) { 
+Calculate_pvalue <- function(ns_genes = 15000, nrep = 500, ncores = 5, silent = TRUE, bulk_data, ...) { 
   
   ## Deconvolution of whole bulk RNA-seq dataset
   message("Executing deconvolution with the whole bulk RNA-seq dataset ..")
   decon_res <- Deconvolve_SCDC(bulk_data, ...)
   spearman_vec_whole <- get_spearman_vec(decon_res = decon_res)
-  pearson_vec_whole <- get_pearson_vec(bulk_data = bulk_data, decon_res = decon_res)
+  #pearson_vec_whole <- get_pearson_vec(bulk_data = bulk_data, decon_res = decon_res)
   
   ## Deconvolution of sampled bulk RNA-seq dataset
   message("Calculation of p-value. This step takes some time ..")
-  spearman_matrix_sampled <- 
-    do.call(cbind, mclapply(1:nrep, function(x) sapply(g, 
-                                                       function(y) get_statistic_decon_sampled_bulk(y, 
-                                                                                                   bulk_data = bulk_data, ...)), 
-                            mc.cores = ncores, mc.silent = silent))
+  #statistics_sampled <- mclapply(1:nrep, function(x) lapply(g, 
+  #                                                     function(y) get_statistic_decon_sampled_bulk(y, 
+  #                                                                                                 bulk_data = bulk_data, ...)), 
+  #                          mc.cores = ncores, mc.silent = silent)
+  
+  statistics_sampled <- mclapply(1:nrep, function(x) get_statistic_decon_sampled_bulk(ns_genes, bulk_data = bulk_data, ...),
+                                 mc.cores = ncores, mc.silent = silent)
+  
+  
+  spearman_matrix_sampled <- sapply(statistics_sampled, function(x) x$spearman_vec)
   spearman_matrix_sampled <- apply(spearman_matrix_sampled, MARGIN= 2, FUN = sort)
+  
+  pearson_matrix_sampled <- sapply(statistics_sampled, function(x) x$pearson_vec)
+  
+  
   #param_list <- list("g" = g, "bulk_data" = bulk_data)
   #MC_result <- MonteCarlo(func=sample_bulk, nrep = 500, param_list = param_list, ncpus = 5) 
 
   ## calculating p-value
-  p_value <- apply(spearman_matrix_sampled, MARGIN = 2, function(x) {
-    1 - (which.min(abs(x - spearman_vec_whole)) / length(spearman_matrix_sampled))})
+  p_value_cibersort <- apply(spearman_matrix_sampled, MARGIN = 2, function(x) {
+    1 - (which.min(abs(x - spearman_vec_whole)) / nrep)})
+  
+  p_value_wy <- sum(colMeans(spearman_matrix_sampled) >= mean(spearman_vec_whole))/ncol(spearman_matrix_sampled)
+  # ich will ja aber nicht wissen ob sie signifikant unterschiedlich sind sondern ob correlation signifikant groß ist, oder?
+
   message("Done.")
 
-  decon_res_pval <- list("decon_res" = decon_res, "p_value" = p_value)
+  decon_res_pval <- list("decon_res" = decon_res, "p_value" = p_value_cibersort)
   return(decon_res_pval)
   
 } 
+
+counter <- 0
+for (i in 1:100) {
+  sample_data <- cbind(sample(my_data$group), my_data$weight)
+  Sperm <- abs((mean(as.numeric(sample_data[which(sample_data[,1] == "Man"),2]))) - (mean(as.numeric(sample_data[which(sample_data[,1] == "Woman"),2]))))
+  if (Sperm >= abs(mean_men_obs - mean_women_obs)){
+    counter <- counter + 1 
+  }
+}
