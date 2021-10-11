@@ -1,5 +1,5 @@
 ## Mastherthesis, Melanie Fattohi
-## calculate p-value of deconvolution with SCDC using Monte Carlo simulation, inspired by CIBERSORT
+## calculate p-value of deconvolution with SCDC
 ## input for deconvolution 
 ### a) bulk RNA-seq dataset (numeric matrix, samples in columns, genes in rows)
 ### b) metadata for bulk (matrix, metadata in columns, samples in rows)
@@ -7,63 +7,67 @@
 ### d) cell types (vector)
 ### e) Ensemble true/false
 ### f) multiple_donors true/false (maybe get the info with c))
-## input for Monte Carlo simulation
-### g (?)
-## one function that samples a) and executes Deconvolve_SCDC()
-## one function that executes Deconvolve_SCDC() of whole a) and then performs Monte Carlo simulation
-## for calculation of p-value
+## input for p-value calculation 
+### (ns_genes = # genes to be sampled from bulk_data)
+### nrep = # permutations
+### ncores = # cores used for calculation of p-value
+### silent = should output of calculation be shown
 ## output:
-### SCDC object with predicted cell type proportions and reconstruction error and p-value
+### SCDC object with predicted cell type proportions and reconstruction error and p-value (based on Pearson and Spearman)
 
 library(SCDC)
 #library(MonteCarlo)
 library(parallel)
+library(robustbase)
 
 ## write utility function that calcs the ensemble prediction with highest mean weight
-get_ensemble_res <- function(ensemble_output){
-  weights <- w_table[1:5, 1:(ncol(ensemble_output$w_table)-4)]
-  ensemble_res <- ensemble_output$prop.list[[which.max(colMeans(weights))]]
-  return(ensemble_res)
+# get_ensemble_res <- function(ensemble_output){
+#   weights <- ensemble_output$w_table[1:5, 1:(ncol(ensemble_output$w_table)-4)]
+#   ensemble_res <- ensemble_output$prop.list[[which.max(colMeans(weights))]]
+#   return(ensemble_res)
+# }
+
+## function to calculate correlation of bulk matrix M and M'= basis * cell type proportions
+get_corr_vec <- function(bulk_data, decon_res){
+  #if(is.null(decon_res$ensemble_res)){
+  #  decon_res <- decon_res$scdc_res
+  #} else if(is.null(decon_res$scdc_res)){
+  #  decon_res <- get_ensemble_res(decon_res$ensemble_res)
+  #}
+  
+  ## matching genes of bulk_data and scRNA-seq reference
+  common_genes <- intersect(rownames(bulk_data), rownames(decon_res$basis.mvw))
+  bulk_data_obs <- bulk_data[common_genes,]
+  bulk_data_est <- decon_res$basis.mvw[common_genes,]  %*% t(decon_res$prop.est.mvw)
+  
+  ## calculate pearson and spearman correlation of bulk_data and scRNA-seq reference %*% cell type proportions
+  pearson_vec <- sapply(1:ncol(bulk_data_obs), function(x) cor(bulk_data_obs[,x], bulk_data_est[,x], method = "pearson"))
+  spearman_vec <- sapply(1:ncol(bulk_data_obs), function(x) cor(bulk_data_obs[,x], bulk_data_est[,x], method = "spearman"))
+  
+  correlation_vec <- list("pearson_vec" = pearson_vec, "spearman_vec" = spearman_vec)
+  return(correlation_vec)
 }
 
-get_spearman_vec <- function(decon_res){
-  if(is.null(decon_res$ensemble_res)){
-    decon_res <- decon_res$scdc_res
-  } else if(is.null(decon_res$scdc_res)){
-    decon_res <- get_ensemble_res(decon_res$ensemble_res)
-  }
-  spearman_vec <- as.vector(decon_res$yeval$spearmany.sample.table)
-  return(spearman_vec)
-}
 
-get_pearson_vec <- function(bulk_data, decon_res){
-  if(is.null(decon_res$ensemble_res)){
-    decon_res <- decon_res$scdc_res
-  } else if(is.null(decon_res$scdc_res)){
-    decon_res <- get_ensemble_res(decon_res$ensemble_res)
-  }
-  bulk_data_est <- decon_res$basis.mvw  %*% t(decon_res$prop.est.mvw)
-  pearson_vec <- sapply(1:ncol(bulk_data), function(x) cor(bulk_data[,x], bulk_data_est[,x]))
-  return(pearson_vec)
-}
-
-
-## g = #genes that are present in both bulk and scrna
-get_statistic_decon_sampled_bulk <- function(g, bulk_data, ...){
-  ## generate sampled bulk_data
-  sampled_genes <- sample(rownames(bulk_data), g)
-  sampled_bulk <- bulk_data[match(sampled_genes, rownames(bulk_data)),]
+get_statistics_decon_sampled_bulk <- function(ns_genes, bulk_data, ...){ ##ns_genes muss rausgenommen werden!
+  ## generate sampled bulk_data by generating ns_genes random rows
+  #sampled_idx <- sample(1:nrow(bulk_data), ns_genes)
+  #sampled_bulk <- bulk_data[sampled_idx,]
+  sampled_bulk <- bulk_data
+  ## shuffle gene labels
+  sampled_genes <- sample(rownames(sampled_bulk))
+  rownames(sampled_bulk) <- sampled_genes
+  #sampled_bulk <- bulk_data[match(sampled_genes, rownames(bulk_data)),]
   
   ## perform decon of sampled bulk_data with Deconvolve_SCDC
-  message(paste("Number of genes in sampled bulk dataset: ", g, sep = ""))
-  decon_res <- Deconvolve_SCDC(bulk_data = sampled_bulk, ...)
+  message(paste("Number of genes in sampled bulk dataset: ", ns_genes, sep = ""))
+  decon_sampled_res <- Deconvolve_SCDC(bulk_data = sampled_bulk, ...)
   #decon_res <- decon_res[[which(!sapply(decon_res, is.null))]]
-  
-  spearman_vec <- get_spearman_vec(decon_res = decon_res)
-  pearson_vec <- 1#get_pearson_vec(bulk_data = sampled_bulk, decon_res = decon_res)
-  
-  statistics <- list("spearman_vec" = spearman_vec, "pearson_vec" = pearson_vec)
-  ## output: Spearman correlation
+
+  pearson_vec <- get_corr_vec(bulk_data = sampled_bulk, decon_res = decon_sampled_res)$pearson_vec  
+  spearman_vec <- get_corr_vec(bulk_data = sampled_bulk, decon_res = decon_sampled_res)$spearman_vec
+
+  statistics <- list("pearson_vec" = pearson_vec, "spearman_vec" = spearman_vec)
   return(statistics)
 }
 
@@ -71,50 +75,35 @@ get_statistic_decon_sampled_bulk <- function(g, bulk_data, ...){
 Calculate_pvalue <- function(ns_genes = 15000, nrep = 500, ncores = 5, silent = TRUE, bulk_data, ...) { 
   
   ## Deconvolution of whole bulk RNA-seq dataset
-  message("Executing deconvolution with the whole bulk RNA-seq dataset ..")
+  message("Executing deconvolution of the whole bulk RNA-seq dataset ..")
   decon_res <- Deconvolve_SCDC(bulk_data, ...)
-  spearman_vec_whole <- get_spearman_vec(decon_res = decon_res)
-  #pearson_vec_whole <- get_pearson_vec(bulk_data = bulk_data, decon_res = decon_res)
+  pearson_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$pearson_vec
+  spearman_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$spearman_vec
   
   ## Deconvolution of sampled bulk RNA-seq dataset
   message("Calculation of p-value. This step takes some time ..")
-  #statistics_sampled <- mclapply(1:nrep, function(x) lapply(g, 
-  #                                                     function(y) get_statistic_decon_sampled_bulk(y, 
-  #                                                                                                 bulk_data = bulk_data, ...)), 
-  #                          mc.cores = ncores, mc.silent = silent)
-  
-  statistics_sampled <- mclapply(1:nrep, function(x) get_statistic_decon_sampled_bulk(ns_genes, bulk_data = bulk_data, ...),
+  statistics_sampled <- mclapply(1:nrep, function(x) get_statistics_decon_sampled_bulk(ns_genes, bulk_data = bulk_data, ...),
                                  mc.cores = ncores, mc.silent = silent)
-  
-  
-  spearman_matrix_sampled <- sapply(statistics_sampled, function(x) x$spearman_vec)
-  spearman_matrix_sampled <- apply(spearman_matrix_sampled, MARGIN= 2, FUN = sort)
-  
   pearson_matrix_sampled <- sapply(statistics_sampled, function(x) x$pearson_vec)
-  
-  
-  #param_list <- list("g" = g, "bulk_data" = bulk_data)
-  #MC_result <- MonteCarlo(func=sample_bulk, nrep = 500, param_list = param_list, ncpus = 5) 
+  spearman_matrix_sampled <- sapply(statistics_sampled, function(x) x$spearman_vec)
 
   ## calculating p-value
-  p_value_cibersort <- apply(spearman_matrix_sampled, MARGIN = 2, function(x) {
-    1 - (which.min(abs(x - spearman_vec_whole)) / nrep)})
+  p_value_wy_pearson <- (sum(colMedians(abs(pearson_matrix_sampled)) >= median(abs(pearson_vec_whole)))+1)/(ncol(pearson_matrix_sampled)+1)
+  p_value_wy_spearman <- (sum(colMedians(abs(spearman_matrix_sampled)) >= median(abs(spearman_vec_whole)))+1)/(ncol(spearman_matrix_sampled)+1)
   
-  p_value_wy <- sum(colMeans(spearman_matrix_sampled) >= mean(spearman_vec_whole))/ncol(spearman_matrix_sampled)
-  # ich will ja aber nicht wissen ob sie signifikant unterschiedlich sind sondern ob correlation signifikant groß ist, oder?
-
+  # pearson_matrix_sampled_sort <- apply(pearson_matrix_sampled, MARGIN= 2, FUN = sort)
+  # spearman_matrix_sampled_sort <- apply(spearman_matrix_sampled, MARGIN= 2, FUN = sort)
+  # p_value_cibersort_pearson <- apply(pearson_matrix_sampled_sort, MARGIN = 2, function(x) {
+  #   1 - (which.min(abs(x - pearson_vec_whole)) / nrep)})
+  # p_value_cibersort_spearman <- apply(spearman_matrix_sampled_sort, MARGIN = 2, function(x) {
+  #   1 - (which.min(abs(x - spearman_vec_whole)) / nrep)})
+  
   message("Done.")
 
-  decon_res_pval <- list("decon_res" = decon_res, "p_value" = p_value_cibersort)
+  decon_res_pval <- list("decon_res" = decon_res, 
+                         "p_value_wy_pearson" = p_value_wy_pearson,
+                         "p_value_wy_spearman" = p_value_wy_spearman)#, 
+                         #"p_value_cibersort_pearson" = p_value_cibersort_pearson,
+                         #"p_value_cibersort_spearman" = p_value_cibersort_spearman)
   return(decon_res_pval)
-  
 } 
-
-counter <- 0
-for (i in 1:100) {
-  sample_data <- cbind(sample(my_data$group), my_data$weight)
-  Sperm <- abs((mean(as.numeric(sample_data[which(sample_data[,1] == "Man"),2]))) - (mean(as.numeric(sample_data[which(sample_data[,1] == "Woman"),2]))))
-  if (Sperm >= abs(mean_men_obs - mean_women_obs)){
-    counter <- counter + 1 
-  }
-}
