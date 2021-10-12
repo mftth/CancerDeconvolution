@@ -49,14 +49,13 @@ get_corr_vec <- function(bulk_data, decon_res){
 }
 
 
-get_statistics_decon_sampled_bulk <- function(ns_genes, bulk_data, ...){ ##ns_genes muss rausgenommen werden!
+get_statistics_decon_sampled_bulk <- function(ns_genes, bulk_data, ...){
   ## generate sampled bulk_data by generating ns_genes random rows
-  #sampled_idx <- sample(1:nrow(bulk_data), ns_genes)
-  #sampled_bulk <- bulk_data[sampled_idx,]
-  sampled_bulk <- bulk_data
+  sampled_idx <- sample(1:nrow(bulk_data), ns_genes)
+  sampled_bulk <- bulk_data[sampled_idx,]
   ## shuffle gene labels
-  sampled_genes <- sample(rownames(sampled_bulk))
-  rownames(sampled_bulk) <- sampled_genes
+  #sampled_genes <- sample(rownames(sampled_bulk))
+  #rownames(sampled_bulk) <- sampled_genes
   #sampled_bulk <- bulk_data[match(sampled_genes, rownames(bulk_data)),]
   
   ## perform decon of sampled bulk_data with Deconvolve_SCDC
@@ -72,7 +71,44 @@ get_statistics_decon_sampled_bulk <- function(ns_genes, bulk_data, ...){ ##ns_ge
 }
 
 
-Calculate_pvalue <- function(ns_genes = 15000, nrep = 500, ncores = 5, silent = TRUE, bulk_data, ...) { 
+get_number_marker_genes <- function(decon_res){
+  quantiles <- sapply(1:ncol(decon_res$basis.mvw), function(x) quantile(decon_res$basis.mvw[,x], seq(0,1,0.01))[100])
+  marker_genes_ct <- lapply(1:length(quantiles), function(x) {
+    which(decon_res$basis.mvw[,x]>quantiles[x])
+  })
+  n_marker_genes <- length(Reduce(union, marker_genes_ct))
+  
+  return(n_marker_genes)
+}
+
+# get_obs_est_matrix <- function(bulk_data, decon_res){
+#   common_genes <- intersect(rownames(bulk_data), rownames(decon_res$basis.mvw))
+#   bulk_data_obs <- bulk_data[common_genes,]
+#   bulk_data_est <- decon_res$basis.mvw[common_genes,]  %*% t(decon_res$prop.est.mvw)
+#   
+#   bulk_obs_est <- rbind(bulk_data_obs, bulk_data_est)
+#   bulk_obs_est <- cbind(bulk_obs_est, c(rep("M", nrow(bulk_data_obs)), rep("M_est", nrow(bulk_data_est))))
+#   colnames(bulk_obs_est)[ncol(bulk_obs_est)] <- "label"
+# 
+#   return(bulk_obs_est)
+# }
+# 
+# 
+# get_corr_shuffled_labels <- function(bulk_obs_est){
+#   bulk_obs_est$label <- sample(bulk_obs_est$label)
+#   bulk_obs_shuffled <- bulk_obs_est[which(bulk_obs_est$label == "M"),]
+#   bulk_est_shuffled <- bulk_obs_est[which(bulk_obs_est$label == "M_est"),]
+#   pearson_vec_shuffled <- sapply(1:(ncol(bulk_obs_shuffled)-1), function(x) cor(bulk_obs_shuffled[,x], bulk_est_shuffled[,x], method = "pearson"))
+#   spearman_vec_shuffled <- sapply(1:(ncol(bulk_obs_shuffled)-1), function(x) cor(bulk_obs_shuffled[,x], bulk_est_shuffled[,x], method = "spearman"))
+#   
+#   correlation_vec <- list("pearson_vec" = pearson_vec_shuffled, "spearman_vec" = spearman_vec_shuffled)
+#   return(correlation_vec)
+# }
+
+
+
+
+Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, ...) { 
   
   ## Deconvolution of whole bulk RNA-seq dataset
   message("Executing deconvolution of the whole bulk RNA-seq dataset ..")
@@ -80,14 +116,28 @@ Calculate_pvalue <- function(ns_genes = 15000, nrep = 500, ncores = 5, silent = 
   pearson_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$pearson_vec
   spearman_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$spearman_vec
   
+  ## Calculate significance of Deconvolution
+  # bulk_obs_est <- get_obs_est_matrix(bulk_data = bulk_data, decon_res = decon_res)
+  # statistics_shuffled <- mclapply(1:nrep, function(x) get_corr_shuffled_labels(bulk_obs_est = bulk_obs_est), 
+  #                                 mc.cores = ncores, mc.silent = silent)
+  # pearson_matrix_shuffled <- sapply(statistics_shuffled, function(x) x$pearson_vec)
+  # spearman_matrix_shuffled <- sapply(statistics_shuffled, function(x) x$spearman_vec)
+  # p_value_wy_pearson_shuffled <- (sum(colMedians(abs(pearson_matrix_shuffled)) >= median(abs(pearson_vec_whole)))+1)/(ncol(pearson_matrix_shuffled)+1)
+  # p_value_wy_spearman_shuffled <- (sum(colMedians(abs(spearman_matrix_shuffled)) >= median(abs(spearman_vec_whole)))+1)/(ncol(spearman_matrix_shuffled)+1)
+  
+  
   ## Deconvolution of sampled bulk RNA-seq dataset
   message("Calculation of p-value. This step takes some time ..")
+  ## Calculate number of marker genes 
+  ns_genes <- get_number_marker_genes(decon_res = decon_res)
+  
+  ## Approximate distribution of test statistic
   statistics_sampled <- mclapply(1:nrep, function(x) get_statistics_decon_sampled_bulk(ns_genes, bulk_data = bulk_data, ...),
                                  mc.cores = ncores, mc.silent = silent)
   pearson_matrix_sampled <- sapply(statistics_sampled, function(x) x$pearson_vec)
   spearman_matrix_sampled <- sapply(statistics_sampled, function(x) x$spearman_vec)
 
-  ## calculating p-value
+  ## Calculate p-value
   p_value_wy_pearson <- (sum(colMedians(abs(pearson_matrix_sampled)) >= median(abs(pearson_vec_whole)))+1)/(ncol(pearson_matrix_sampled)+1)
   p_value_wy_spearman <- (sum(colMedians(abs(spearman_matrix_sampled)) >= median(abs(spearman_vec_whole)))+1)/(ncol(spearman_matrix_sampled)+1)
   

@@ -11,7 +11,7 @@
 
 library(SCDC)
 
-Quality_control <- function(sc_data, sc_meta, sc_path, cell_types, multiple_donors, ...){
+Quality_control <- function(sc_data, sc_meta, sc_path, multiple_donors, ...){
   message("Creating ExpressionSet object of the scRNA-seq dataset ..")
   
   if(ncol(sc_data) >= nrow(sc_meta)){
@@ -25,6 +25,7 @@ Quality_control <- function(sc_data, sc_meta, sc_path, cell_types, multiple_dono
   }
   
   ## filter genes
+  message("Filtering genes ..")
   genes_var <- apply(sc_data, MARGIN = 1, FUN = var)
   sc_data <- sc_data[genes_var != 0, ]
   sc_data <- sc_data[rowSums(sc_data) >= 1, ]
@@ -47,4 +48,6 @@ Quality_control <- function(sc_data, sc_meta, sc_path, cell_types, multiple_dono
   }
   
   saveRDS(sc_qc, file = sc_path)
+  
+  return(sc_qc)
 }
