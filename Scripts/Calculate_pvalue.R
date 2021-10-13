@@ -76,9 +76,11 @@ get_number_marker_genes <- function(decon_res){
   marker_genes_ct <- lapply(1:length(quantiles), function(x) {
     which(decon_res$basis.mvw[,x]>quantiles[x])
   })
-  n_marker_genes <- length(Reduce(union, marker_genes_ct))
+  marker_genes <- Reduce(union, marker_genes_ct)
+  n_marker_genes <- length(marker_genes)
   
-  return(n_marker_genes)
+  list_markergenes <- list("marker_genes" = marker_genes, "n_marker_genes" = n_marker_genes)
+  return(list_markergenes)
 }
 
 # get_obs_est_matrix <- function(bulk_data, decon_res){
