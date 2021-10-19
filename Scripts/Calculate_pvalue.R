@@ -38,6 +38,7 @@ get_corr_vec <- function(bulk_data, decon_res){
   ## matching genes of bulk_data and scRNA-seq reference
   common_genes <- intersect(rownames(bulk_data), rownames(decon_res$basis.mvw))
   bulk_data_obs <- bulk_data[common_genes,]
+  #bulk_data_obs <- as.matrix(bulk_data_obs, ncol = ncol(bulk_data_obs))
   bulk_data_obs <- getCPM0(bulk_data_obs)
   bulk_data_est <- decon_res$basis.mvw[common_genes,]  %*% t(decon_res$prop.est.mvw)
   bulk_data_est <- getCPM0(bulk_data_est)
@@ -45,8 +46,27 @@ get_corr_vec <- function(bulk_data, decon_res){
   ## calculate pearson and spearman correlation of bulk_data and scRNA-seq reference %*% cell type proportions
   pearson_vec <- sapply(1:ncol(bulk_data_obs), function(x) cor(bulk_data_obs[,x], bulk_data_est[,x], method = "pearson"))
   spearman_vec <- sapply(1:ncol(bulk_data_obs), function(x) cor(bulk_data_obs[,x], bulk_data_est[,x], method = "spearman"))
-  mad_vec <- colMedians(abs(bulk_data_est - bulk_data_obs)) # median absolute deviation
+  mad_vec <- colMedians(abs((bulk_data_est - bulk_data_obs) - median(bulk_data_est - bulk_data_obs))) # median absolute deviation
   rmsd_vec <- sqrt(colMeans((bulk_data_est - bulk_data_obs)^2))
+  
+  
+  correlation_vec <- list("pearson_vec" = pearson_vec, "spearman_vec" = spearman_vec,
+                          "mad_vec" = mad_vec, "rmsd_vec" = rmsd_vec)
+  return(correlation_vec)
+}
+
+
+get_corr_vec_coeff <- function(decon_res, truep){
+  pred_data <- decon_res$prop.est.mvw
+  obs_data <- truep[, colnames(pred_data)]
+  pred_data <- getCPM0(pred_data)
+  obs_data <- getCPM0(obs_data)
+  
+  ## calculate pearson and spearman correlation of bulk_data and scRNA-seq reference %*% cell type proportions
+  pearson_vec <- sapply(1:ncol(obs_data), function(x) cor(obs_data[,x], pred_data[,x], method = "pearson"))
+  spearman_vec <- sapply(1:ncol(obs_data), function(x) cor(obs_data[,x], pred_data[,x], method = "spearman"))
+  mad_vec <- colMedians(abs((pred_data - obs_data) - median(pred_data - obs_data))) # median absolute deviation
+  rmsd_vec <- sqrt(colMeans((pred_data - obs_data)^2))
   
   
   correlation_vec <- list("pearson_vec" = pearson_vec, "spearman_vec" = spearman_vec,
@@ -90,32 +110,6 @@ get_number_marker_genes <- function(decon_res){
   return(n_marker_genes)
 }
 
-# get_obs_est_matrix <- function(bulk_data, decon_res){
-#   common_genes <- intersect(rownames(bulk_data), rownames(decon_res$basis.mvw))
-#   bulk_data_obs <- bulk_data[common_genes,]
-#   bulk_data_est <- decon_res$basis.mvw[common_genes,]  %*% t(decon_res$prop.est.mvw)
-#   
-#   bulk_obs_est <- rbind(bulk_data_obs, bulk_data_est)
-#   bulk_obs_est <- cbind(bulk_obs_est, c(rep("M", nrow(bulk_data_obs)), rep("M_est", nrow(bulk_data_est))))
-#   colnames(bulk_obs_est)[ncol(bulk_obs_est)] <- "label"
-# 
-#   return(bulk_obs_est)
-# }
-# 
-# 
-# get_corr_shuffled_labels <- function(bulk_obs_est){
-#   bulk_obs_est$label <- sample(bulk_obs_est$label)
-#   bulk_obs_shuffled <- bulk_obs_est[which(bulk_obs_est$label == "M"),]
-#   bulk_est_shuffled <- bulk_obs_est[which(bulk_obs_est$label == "M_est"),]
-#   pearson_vec_shuffled <- sapply(1:(ncol(bulk_obs_shuffled)-1), function(x) cor(bulk_obs_shuffled[,x], bulk_est_shuffled[,x], method = "pearson"))
-#   spearman_vec_shuffled <- sapply(1:(ncol(bulk_obs_shuffled)-1), function(x) cor(bulk_obs_shuffled[,x], bulk_est_shuffled[,x], method = "spearman"))
-#   
-#   correlation_vec <- list("pearson_vec" = pearson_vec_shuffled, "spearman_vec" = spearman_vec_shuffled)
-#   return(correlation_vec)
-# }
-
-
-
 
 Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, ...) { 
   
@@ -126,16 +120,6 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, .
   spearman_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$spearman_vec
   mad_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$mad_vec
   rmsd_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$rmsd_vec
-  
-  ## Calculate significance of Deconvolution
-  # bulk_obs_est <- get_obs_est_matrix(bulk_data = bulk_data, decon_res = decon_res)
-  # statistics_shuffled <- mclapply(1:nrep, function(x) get_corr_shuffled_labels(bulk_obs_est = bulk_obs_est), 
-  #                                 mc.cores = ncores, mc.silent = silent)
-  # pearson_matrix_shuffled <- sapply(statistics_shuffled, function(x) x$pearson_vec)
-  # spearman_matrix_shuffled <- sapply(statistics_shuffled, function(x) x$spearman_vec)
-  # p_value_wy_pearson_shuffled <- (sum(colMedians(abs(pearson_matrix_shuffled)) >= median(abs(pearson_vec_whole)))+1)/(ncol(pearson_matrix_shuffled)+1)
-  # p_value_wy_spearman_shuffled <- (sum(colMedians(abs(spearman_matrix_shuffled)) >= median(abs(spearman_vec_whole)))+1)/(ncol(spearman_matrix_shuffled)+1)
-  
   
   ## Deconvolution of sampled bulk RNA-seq dataset
   message("Calculation of p-value. This step takes some time ..")
@@ -169,8 +153,11 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, .
   message("Done.")
 
   decon_res_pval <- list("decon_res" = decon_res, 
+                         "statistics_sampled" = statistics_sampled,
                          "p_value_wy_pearson" = p_value_wy_pearson,
-                         "p_value_wy_spearman" = p_value_wy_spearman)#, 
+                         "p_value_wy_spearman" = p_value_wy_spearman,
+                         "p_value_wy_mad" = p_value_wy_mad,
+                         "p_value_wy_rmsd" = p_value_wy_rmsd)
                          #"p_value_cibersort_pearson" = p_value_cibersort_pearson,
                          #"p_value_cibersort_spearman" = p_value_cibersort_spearman)
   return(decon_res_pval)

@@ -52,6 +52,8 @@ decon_pval_random <- Calculate_pvalue(nrep = reps, bulk_data = random_bulk, bulk
                                       multiple_donors = TRUE)
 decon_pval_random$p_value_wy_pearson  ## should be > 0.05; is 1
 decon_pval_random$p_value_wy_spearman ## should be > 0.05; is 1
+decon_pval_random$p_value_wy_mad
+decon_pval_random$p_value_wy_rmsd
 #View(decon_pval_random$decon_res$prop.est.mvw)
 
 
@@ -91,8 +93,8 @@ SCDC_peval(ptrue = pseudo_bulk_rand$true_p, pest = decon_pval_pseudo_rand$decon_
 
 ## 3) real data
 decon_pval <- Calculate_pvalue(nrep = reps, bulk_data = repset, bulk_meta = repset_meta,
-                               cell_types =  cts, sc_path = c(scpath1, scpath2, scpath3), 
-                               ensemble = TRUE, multiple_donors = TRUE)
+                               cell_types =  cts, sc_path = scpath1, 
+                               ensemble = FALSE, multiple_donors = TRUE)
 decon_pval$p_value_wy_pearson  ## is 1,  0.9215686 tosti
 decon_pval$p_value_wy_spearman ## is 0.8235294  0.8039216 baron, 0.7058824  0.6470588 lawlor, 0.8823529   0.9215686 segerstolpe, 0.8627451 tosti, 0.9607843 ensemble
 
