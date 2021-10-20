@@ -28,7 +28,7 @@ library(robustbase)
 # }
 
 ## function to calculate correlation of bulk matrix M and M'= basis * cell type proportions
-get_corr_vec <- function(bulk_data, decon_res){
+get_test_statistics_vec <- function(bulk_data, decon_res){
   #if(is.null(decon_res$ensemble_res)){
   #  decon_res <- decon_res$scdc_res
   #} else if(is.null(decon_res$scdc_res)){
@@ -50,28 +50,9 @@ get_corr_vec <- function(bulk_data, decon_res){
   rmsd_vec <- sqrt(colMeans((bulk_data_est - bulk_data_obs)^2))
   
   
-  correlation_vec <- list("pearson_vec" = pearson_vec, "spearman_vec" = spearman_vec,
+  test_statistics_vec <- list("pearson_vec" = pearson_vec, "spearman_vec" = spearman_vec,
                           "mad_vec" = mad_vec, "rmsd_vec" = rmsd_vec)
-  return(correlation_vec)
-}
-
-
-get_corr_vec_coeff <- function(decon_res, truep){
-  pred_data <- decon_res$prop.est.mvw
-  obs_data <- truep[, colnames(pred_data)]
-  pred_data <- getCPM0(pred_data)
-  obs_data <- getCPM0(obs_data)
-  
-  ## calculate pearson and spearman correlation of bulk_data and scRNA-seq reference %*% cell type proportions
-  pearson_vec <- sapply(1:ncol(obs_data), function(x) cor(obs_data[,x], pred_data[,x], method = "pearson"))
-  spearman_vec <- sapply(1:ncol(obs_data), function(x) cor(obs_data[,x], pred_data[,x], method = "spearman"))
-  mad_vec <- colMedians(abs((pred_data - obs_data) - median(pred_data - obs_data))) # median absolute deviation
-  rmsd_vec <- sqrt(colMeans((pred_data - obs_data)^2))
-  
-  
-  correlation_vec <- list("pearson_vec" = pearson_vec, "spearman_vec" = spearman_vec,
-                          "mad_vec" = mad_vec, "rmsd_vec" = rmsd_vec)
-  return(correlation_vec)
+  return(test_statistics_vec)
 }
 
 
@@ -89,7 +70,7 @@ get_statistics_decon_sampled_bulk <- function(ns_genes, bulk_data, ...){
   decon_sampled_res <- Deconvolve_SCDC(bulk_data = sampled_bulk, ...)
   #decon_res <- decon_res[[which(!sapply(decon_res, is.null))]]
 
-  statistics_vec <- get_corr_vec(bulk_data = sampled_bulk, decon_res = decon_sampled_res)
+  statistics_vec <- get_test_statistics_vec(bulk_data = sampled_bulk, decon_res = decon_sampled_res)
   #pearson_vec <- get_corr_vec(bulk_data = sampled_bulk, decon_res = decon_sampled_res)$pearson_vec  
   #spearman_vec <- get_corr_vec(bulk_data = sampled_bulk, decon_res = decon_sampled_res)$spearman_vec
 
@@ -116,10 +97,10 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, .
   ## Deconvolution of whole bulk RNA-seq dataset
   message("Executing deconvolution of the whole bulk RNA-seq dataset ..")
   decon_res <- Deconvolve_SCDC(bulk_data = bulk_data, ...)
-  pearson_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$pearson_vec
-  spearman_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$spearman_vec
-  mad_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$mad_vec
-  rmsd_vec_whole <- get_corr_vec(bulk_data = bulk_data, decon_res = decon_res)$rmsd_vec
+  pearson_vec_whole <- get_test_statistics_vec(bulk_data = bulk_data, decon_res = decon_res)$pearson_vec
+  spearman_vec_whole <- get_test_statistics_vec(bulk_data = bulk_data, decon_res = decon_res)$spearman_vec
+  mad_vec_whole <- get_test_statistics_vec(bulk_data = bulk_data, decon_res = decon_res)$mad_vec
+  rmsd_vec_whole <- get_test_statistics_vec(bulk_data = bulk_data, decon_res = decon_res)$rmsd_vec
   
   ## Deconvolution of sampled bulk RNA-seq dataset
   message("Calculation of p-value. This step takes some time ..")
