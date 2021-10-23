@@ -51,10 +51,10 @@ colnames(random_bulk) <- colnames(repset)
 decon_pval_random <- Calculate_pvalue(nrep = reps, bulk_data = random_bulk, sc_data = qc_baron$sc.eset.qc,
                                       bulk_meta = repset_meta, cell_types = cts, ensemble = FALSE,
                                       multiple_donors = TRUE)
-decon_pval_random$p_value_wy_pearson  ## should be > 0.05; is 1; 0.9215686
-decon_pval_random$p_value_wy_spearman ## should be > 0.05; is 1; 0.9803922
-decon_pval_random$p_value_wy_mad ## 0.05882353
-decon_pval_random$p_value_wy_rmsd ## 0.2352941
+decon_pval_random$p_value_wy_pearson  ## should be > 0.05; is 1; 0.9215686; 0.9019608
+decon_pval_random$p_value_wy_spearman ## should be > 0.05; is 1; 0.9803922; 0.5882353
+decon_pval_random$p_value_wy_mad ## 0.05882353; 0.2941176
+decon_pval_random$p_value_wy_rmsd ## 0.2352941; 0.2156863
 #View(decon_pval_random$decon_res$prop.est.mvw)
 
 
@@ -67,12 +67,12 @@ pseudo_bulk_rand <- generateBulk_norep(qc_segerstolpe$sc.eset.qc, ct.varname = "
                                        ct.sub = cts, nbulk = 10)
 
 decon_pval_pseudo <- Calculate_pvalue(nrep = reps, bulk_data = pseudo_bulk$pseudo_eset@assayData$exprs, 
-                                     sc_data = qc_baron$sc.eset.qc, bulk_meta = pseudo_bulk$pseudo_eset@phenoData@data,
+                                      sc_data = qc_baron$sc.eset.qc, bulk_meta = pseudo_bulk$pseudo_eset@phenoData@data,
                                       cell_types = cts, ensemble = FALSE, multiple_donors = TRUE)
 decon_pval_pseudo$p_value_wy_pearson  ## is 0.1764706; 0.01960784
 decon_pval_pseudo$p_value_wy_spearman ## is 0.1176471 0.5882353; 0.01960784
-decon_pval_pseudo$p_value_wy_mad ## 0.01960784
-decon_pval_pseudo$p_value_wy_rmsd ## 0.01960784
+decon_pval_pseudo$p_value_wy_mad ## 0.01960784; 0.05882353
+decon_pval_pseudo$p_value_wy_rmsd ## 0.01960784; 0.1176471
 SCDC_peval(ptrue = pseudo_bulk$truep, pest = decon_pval_pseudo$decon_res$prop.est.mvw, 
            pest.names = "pseudo_bulk")$evals.table
 #               RMSD     mAD      R
@@ -83,7 +83,7 @@ SCDC_peval(ptrue = pseudo_bulk$truep, pest = decon_pval_pseudo$decon_res$prop.es
 decon_pval_pseudo_rand <- Calculate_pvalue(nrep = reps, bulk_data = pseudo_bulk_rand$pseudo_bulk, 
                                            sc_data = qc_baron$sc.eset.qc, bulk_meta = pseudo_bulk_rand$pseudo_eset@phenoData@data,
                                            cell_types = cts, ensemble = FALSE, multiple_donors = TRUE)
-decon_pval_pseudo_rand$p_value_wy_pearson  ## is 0.09803922 0.1372549; 0.01960784
+decon_pval_pseudo_rand$p_value_wy_pearson  ## is 0.09803922 0.1372549; 0.01960784; 0.03921569
 decon_pval_pseudo_rand$p_value_wy_spearman ## is 0.627451 0.3333333; 0.01960784
 decon_pval_pseudo_rand$p_value_wy_mad ## 0.01960784
 decon_pval_pseudo_rand$p_value_wy_rmsd ## 0.01960784
@@ -96,31 +96,10 @@ SCDC_peval(ptrue = pseudo_bulk_rand$true_p, pest = decon_pval_pseudo_rand$decon_
 
 ## 3) real data
 decon_pval <- Calculate_pvalue(nrep = reps, bulk_data = repset, bulk_meta = repset_meta,
-                               cell_types =  cts, sc_data = qc_baron$sc.eset.qc,
+                               cell_types =  c("alpha", "beta", "gamma", "delta", "ductal"), sc_data = qc_tosti$sc.eset.qc,
                                ensemble = FALSE, multiple_donors = TRUE)
-decon_pval$p_value_wy_pearson  ## is 1,  0.9215686 tosti; 0.01960784
+decon_pval$p_value_wy_pearson  ## is 1,  0.9215686 tosti; 0.01960784;  0.5686275
 decon_pval$p_value_wy_spearman ## 0.01960784
-decon_pval$p_value_wy_mad ## 0.01960784
-decon_pval$p_value_wy_rmsd ## 1
-
-
-
-
-
-
-
-
-
-#################### testing area ####################
-test_res <- Calculate_pvalue(g = 15000, nrep = 50, ncores = 5, silent = FALSE, bulk_data = repset, bulk_meta = repset_meta, 
-                             cell_types = c("alpha", "beta", "gamma", "delta", "acinar", "ductal"),
-                             sc_path = "~/Praktikum/Deko_SCDC/Training_Data/Baron_qc_exo.RDS", 
-                             ensemble = FALSE, multiple_donors = TRUE)
-
-pearson_matrix_sampled_sort <- apply(pearson_matrix_shuffled, MARGIN= 2, FUN = sort)
-spearman_matrix_sampled_sort <- apply(spearman_matrix_shuffled, MARGIN= 2, FUN = sort)
-p_value_cibersort_pearson <- apply(pearson_matrix_sampled_sort, MARGIN = 2, function(x) {
-  1 - (which.min(abs(x - pearson_vec_whole)) / 100)})
-p_value_cibersort_spearman <- apply(spearman_matrix_sampled_sort, MARGIN = 2, function(x) {
-  1 - (which.min(abs(x - spearman_vec_whole)) / 100)})
+decon_pval$p_value_wy_mad ## 0.01960784; 0.1764706
+decon_pval$p_value_wy_rmsd ## 1; 0.5098039
 

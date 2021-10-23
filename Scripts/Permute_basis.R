@@ -31,7 +31,8 @@ calc_ens_res <- function(ensemble_output){
 }
 
 
-Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types, ensemble, multiple_donors, ...) {
+Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types, ensemble, multiple_donors, ...) { 
+  # sc_data und sc_basis könnten raus. dann müssen halt die parameter im funktionsaufruf genauso heißen wie bei SCDC
 
   message("Creating ExpressionSet object of the bulk RNA-seq dataset ..")
   ## matching samples of bulk_data with samples of bulk_meta
@@ -61,7 +62,7 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
       #sc_list <- lapply(sc_data, function(x) x$sc.eset.qc)
       decon_res <- SCDC_ENSEMBLE(bulk.eset = bulk_eset, sc.eset.list = sc_data, 
                                  ct.varname = "cluster", sample = "sample", ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht -> make it soft coded
-                                 ct.sub =  cell_types, ...) ## hier auch
+                                 ct.sub =  cell_types, ...) 
       decon_res <- calc_ens_res(ensemble_output =  decon_res)
       message("Done.")
       
@@ -81,18 +82,18 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
         
         message("Performing deconvolution of multiple donors with SCDC ..")  
         
-        decon_res <- SCDC_prop(bulk.eset = bulk_eset, sc.eset = sc_data, 
-                               sc.basis = sc_basis, ct.varname = "cluster", sample = "sample", ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht -> make it soft coded
-                               ct.sub = cell_types, ...)  ## hier auch
+        decon_res <- SCDC_prop(bulk.eset = bulk_eset, sc.eset = sc_data, sc.basis = sc_basis,
+                               ct.varname = "cluster", sample = "sample",  ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht -> make it soft coded
+                               ct.sub =  cell_types, ...) 
         message("Done.")
         
       } else {
         
         message("Performing deconvolution of one donor with SCDC ..")  
         
-        decon_res <- SCDC_prop_ONE(bulk.eset = bulk_eset, sc.eset = sc_data, 
+        decon_res <- SCDC_prop_ONE(bulk.eset = bulk_eset, sc.eset = sc_data, sc.basis = sc_basis,
                                    ct.varname = "cluster", sample = "sample", ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht -> make it soft coded
-                                   ct.sub = cell_types, ...)  ## hier auch
+                                   ct.sub =  cell_types, ...) 
         message("Done.")
         
       }
@@ -102,6 +103,21 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
   }
   
   return(decon_res)
+}
+
+
+Create_basis <- function(multiple_donors, sc_data, cell_types){
+  if(multiple_donors){
+    
+    sc_basis <- SCDC_basis(x = sc_data, ct.sub = cell_types, ct.varname = "cluster", sample = "sample")  
+    
+  } else {
+    
+    sc_basis <- SCDC_basis_ONE(x = sc_data, ct.sub = cell_types,  ct.varname = "cluster", sample = "sample")  
+    
+  }
+  
+  return(sc_basis)
 }
 
 
@@ -127,18 +143,60 @@ get_test_statistics_vec <- function(bulk_data, decon_res){
   return(test_statistics_vec)
 }
 
+get_marker_genes <- function(decon_res){
+  quantiles <- sapply(1:ncol(decon_res$basis.mvw), function(x) quantile(decon_res$basis.mvw[,x], seq(0,1,0.01))[100])
+  marker_genes_ct <- lapply(1:length(quantiles), function(x) {
+    which(decon_res$basis.mvw[,x]>quantiles[x])
+  })
+  marker_genes <- Reduce(union, marker_genes_ct)
+  n_marker_genes <- length(marker_genes)
+  
+  list_marker_genes <- list("marker_genes" = marker_genes, "n_marker_genes" = n_marker_genes)
+  return(list_marker_genes)
+}
 
-get_permuted_basis_statistics <- function(bulk_data, sc_basis, cell_types, sc_data, ...){
+
+get_permuted_basis_statistics <- function(marker_genes, bulk_data, sc_data, sc_basis, cell_types, multiple_donors, ...){
   
-  ## generate permuted basis by shuffling gene labels
+  ## generate permuted basis by shuffling gene labels of marker genes
+  ## basis of only marker genes
+  sc_basis_marker<- sc_basis
+  sc_basis_marker$basis <- sc_basis$basis[marker_genes$marker_genes,]
+  sc_basis_marker$basis.mvw <- sc_basis$basis.mvw[marker_genes$marker_genes,]
+  sc_basis_marker_rn <- rownames(sc_basis_marker$basis.mvw)
+  
+  ## basis of only non-marker genes
+  sc_basis_nmarker <- sc_basis
+  sc_basis_nmarker$basis <- sc_basis$basis[-marker_genes$marker_genes,]
+  sc_basis_nmarker$basis.mvw <- sc_basis$basis.mvw[-marker_genes$marker_genes,]
+  
+  ## shuffle marker-gene-many genes from non-marker genes and set as labels for marker genes
+  shuffled_genes_idx <- sample(1:nrow(sc_basis_nmarker$basis.mvw), length(sc_basis_marker_rn))
+  rownames(sc_basis_marker$basis.mvw) <- rownames(sc_basis_nmarker$basis.mvw)[shuffled_genes_idx]
+  rownames(sc_basis_marker$basis) <- rownames(sc_basis_nmarker$basis.mvw)[shuffled_genes_idx]
+  
+  ## set marker genes as labels for shuffled non-marker genes, i.e. switch labels between
+  shuffled_genes <- sample(sc_basis_marker_rn)
+  rownames(sc_basis_nmarker$basis.mvw)[shuffled_genes_idx] <- shuffled_genes
+  rownames(sc_basis_nmarker$basis)[shuffled_genes_idx] <- shuffled_genes
+  
+  ## put both matrices together and shuffle rows
+  shuffled_basis <- rbind(sc_basis_nmarker$basis, sc_basis_marker$basis)
+  shuffled_basis.mvw <- rbind(sc_basis_nmarker$basis.mvw, sc_basis_marker$basis.mvw)
+  shuffled_idx <- sample(1:nrow(shuffled_basis.mvw))
+  shuffled_basis <- shuffled_basis[shuffled_idx,]
+  shuffled_basis.mvw <- shuffled_basis.mvw[shuffled_idx,]
   sc_basis_shuffled <- sc_basis
-  shuffled_genes <- sample(rownames(sc_basis_shuffled$basis.mvw))
-  rownames(sc_basis_shuffled$basis.mvw) <- shuffled_genes
-  rownames(sc_basis_shuffled$basis.mvw) <- shuffled_genes
+  sc_basis_shuffled$basis <- shuffled_basis
+  sc_basis_shuffled$basis.mvw <- shuffled_basis.mvw
   
-  ## perform decon of shuffled basis with Deconvolve_SCDC
-  decon_shuffled_res <- Deconvolve_SCDC(bulk_data = bulk_data, sc_basis = sc_basis_shuffled, 
-                                        cell_types = cell_types, sc_data = sc_data, ...)
+  #shuffled_genes <- sample(rownames(sc_basis_shuffled$basis.mvw))
+  #rownames(sc_basis_shuffled$basis.mvw) <- shuffled_genes
+  #rownames(sc_basis_shuffled$basis) <- shuffled_genes
+  
+  ## perform deconvolution of shuffled basis with Deconvolve_SCDC
+  decon_shuffled_res <- Deconvolve_SCDC(bulk_data = bulk_data, sc_data = sc_data, sc_basis = sc_basis_shuffled,  
+                                        cell_types = cell_types, multiple_donors = multiple_donors, ...)
   
   statistics_vec <- get_test_statistics_vec(bulk_data = bulk_data, decon_res = decon_shuffled_res)
   
@@ -146,24 +204,30 @@ get_permuted_basis_statistics <- function(bulk_data, sc_basis, cell_types, sc_da
 }
 
 
-Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, sc_data, cell_types, ...){
+Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, sc_data, cell_types, multiple_donors, ...){
   
   ## Generate original basis matrix
-  sc_basis <- SCDC_basis(x = sc_data, ct.sub = cell_types, ct.varname = "cluster", sample = "sample")  
-  ## generate basis sollte dann eigene funktion sein, die unterscheiden kann zwischen basis und basis_ONE
+  #sc_basis <- Create_basis(multiple_donors = multiple_donors, x = sc_data, ct.sub = cell_types, 
+  #                         ct.varname = "cluster", sample = "sample")
+  sc_basis <- Create_basis(multiple_donors = multiple_donors, sc_data = sc_data,  cell_types = cell_types)
   
   ## Deconvolution of whole bulk RNA-seq dataset with original basis
   message("Executing deconvolution of the whole bulk RNA-seq dataset ..")
-  decon_res <- Deconvolve_SCDC(bulk_data = bulk_data, sc_basis = sc_basis, 
-                               cell_types = cell_types, sc_data = sc_data, ...)
+  decon_res <- Deconvolve_SCDC(bulk_data = bulk_data, sc_data = sc_data, sc_basis = sc_basis,  
+                               cell_types = cell_types, multiple_donors = multiple_donors, ...)
   statistics_obs <- get_test_statistics_vec(bulk_data = bulk_data, decon_res = decon_res)
   
   ## Deconvolution of shuffled basis
   message("Calculation of p-value. This step takes some time ..")
+  marker_genes <- get_marker_genes(decon_res = decon_res)
   
   ## Approximate distribution of test statistic
-  statistics_sampled <- mclapply(1:nrep, function(x) get_permuted_basis_statistics(bulk_data = bulk_data, sc_basis = sc_basis, 
-                                                                                   cell_types = cell_types, sc_data = sc_data, ...),
+  statistics_sampled <- mclapply(1:nrep, function(x) get_permuted_basis_statistics(marker_genes = marker_genes,
+                                                                                   bulk_data = bulk_data, 
+                                                                                   sc_data = sc_data,
+                                                                                   sc_basis = sc_basis, 
+                                                                                   cell_types = cell_types, 
+                                                                                   multiple_donors = multiple_donors, ...),
                                  mc.cores = ncores, mc.silent = silent)
   pearson_matrix_sampled <- sapply(statistics_sampled, function(x) x$pearson_vec)
   spearman_matrix_sampled <- sapply(statistics_sampled, function(x) x$spearman_vec)
