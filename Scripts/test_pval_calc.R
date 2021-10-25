@@ -96,7 +96,7 @@ SCDC_peval(ptrue = pseudo_bulk_rand$true_p, pest = decon_pval_pseudo_rand$decon_
 
 ## 3) real data
 decon_pval <- Calculate_pvalue(nrep = reps, bulk_data = repset, bulk_meta = repset_meta,
-                               cell_types =  c("alpha", "beta", "gamma", "delta", "ductal"), sc_data = qc_tosti$sc.eset.qc,
+                               cell_types =  cts, sc_data = qc_baron$sc.eset.qc,
                                ensemble = FALSE, multiple_donors = TRUE)
 decon_pval$p_value_wy_pearson  ## is 1,  0.9215686 tosti; 0.01960784;  0.5686275
 decon_pval$p_value_wy_spearman ## 0.01960784

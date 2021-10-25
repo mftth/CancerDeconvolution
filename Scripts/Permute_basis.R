@@ -32,7 +32,6 @@ calc_ens_res <- function(ensemble_output){
 
 
 Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types, ensemble, multiple_donors, ...) { 
-  # sc_data und sc_basis könnten raus. dann müssen halt die parameter im funktionsaufruf genauso heißen wie bei SCDC
 
   message("Creating ExpressionSet object of the bulk RNA-seq dataset ..")
   ## matching samples of bulk_data with samples of bulk_meta
@@ -218,7 +217,7 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, s
   statistics_obs <- get_test_statistics_vec(bulk_data = bulk_data, decon_res = decon_res)
   
   ## Deconvolution of shuffled basis
-  message("Calculation of p-value. This step takes some time ..")
+  message("Calculating p-value. This step takes some time ..")
   marker_genes <- get_marker_genes(decon_res = decon_res)
   
   ## Approximate distribution of test statistic
@@ -240,10 +239,26 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, s
   p_value_wy_mad <- (sum(colMedians(abs(mad_matrix_sampled)) <= median(abs(statistics_obs$mad_vec)))+1)/(ncol(mad_matrix_sampled)+1)
   p_value_wy_rmsd <- (sum(colMedians(abs(rmsd_matrix_sampled)) <= median(abs(statistics_obs$rmsd_vec)))+1)/(ncol(rmsd_matrix_sampled)+1)
   
+  p_value_wy_pearson_per_sample <- sapply(1:nrow(pearson_matrix_sampled), 
+                                          function(x) (sum(abs(pearson_matrix_sampled[x,]) >= abs(statistics_obs$pearson_vec[x]))+1)/(ncol(pearson_matrix_sampled)+1))
+  p_value_wy_spearman_per_sample <- sapply(1:nrow(spearman_matrix_sampled), 
+                                           function(x) (sum(abs(spearman_matrix_sampled[x,]) >= abs(statistics_obs$spearman_vec[x]))+1)/(ncol(spearman_matrix_sampled)+1))
+  p_value_wy_mad_per_sample <- sapply(1:nrow(mad_matrix_sampled), 
+                                      function(x) (sum(abs(mad_matrix_sampled[x,]) <= abs(statistics_obs$mad_vec[x]))+1)/(ncol(mad_matrix_sampled)+1))
+  p_value_wy_rmsd_per_sample <- sapply(1:nrow(rmsd_matrix_sampled), 
+                                       function(x) (sum(abs(rmsd_matrix_sampled[x,]) <= abs(statistics_obs$rmsd_vec[x]))+1)/(ncol(rmsd_matrix_sampled)+1))
+  
+  p_value_per_sample <- data.frame(Pearson = p_value_wy_mad_per_sample,
+                                   Spearman = p_value_wy_spearman_per_sample,
+                                   mAD = p_value_wy_mad_per_sample,
+                                   RMSD = p_value_wy_rmsd_per_sample,
+                                   row.names = rownames(decon_res$prop.est.mvw))
+  
   message("Done.")
   
   decon_res_pval <- list("decon_res" = decon_res, 
                          "statistics_sampled" = statistics_sampled,
+                         "p_value_per_sample" = p_value_per_sample,
                          "p_value_wy_pearson" = p_value_wy_pearson,
                          "p_value_wy_spearman" = p_value_wy_spearman,
                          "p_value_wy_mad" = p_value_wy_mad,
