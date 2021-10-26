@@ -206,8 +206,6 @@ get_permuted_basis_statistics <- function(marker_genes, bulk_data, sc_data, sc_b
 Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, sc_data, cell_types, multiple_donors, ...){
   
   ## Generate original basis matrix
-  #sc_basis <- Create_basis(multiple_donors = multiple_donors, x = sc_data, ct.sub = cell_types, 
-  #                         ct.varname = "cluster", sample = "sample")
   sc_basis <- Create_basis(multiple_donors = multiple_donors, sc_data = sc_data,  cell_types = cell_types)
   
   ## Deconvolution of whole bulk RNA-seq dataset with original basis
@@ -233,7 +231,7 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, s
   mad_matrix_sampled <- sapply(statistics_sampled, function(x) x$mad_vec)
   rmsd_matrix_sampled <- sapply(statistics_sampled, function(x) x$rmsd_vec)
   
-  ## Calculate p-val
+  ## Calculate p-value
   p_value_wy_pearson <- (sum(colMedians(abs(pearson_matrix_sampled)) >= median(abs(statistics_obs$pearson_vec)))+1)/(ncol(pearson_matrix_sampled)+1)
   p_value_wy_spearman <- (sum(colMedians(abs(spearman_matrix_sampled)) >= median(abs(statistics_obs$spearman_vec)))+1)/(ncol(spearman_matrix_sampled)+1)
   p_value_wy_mad <- (sum(colMedians(abs(mad_matrix_sampled)) <= median(abs(statistics_obs$mad_vec)))+1)/(ncol(mad_matrix_sampled)+1)
