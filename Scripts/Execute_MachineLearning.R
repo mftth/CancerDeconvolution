@@ -10,7 +10,6 @@
 
 library(caret)
 library(skimr)
-library(RANN)
 
 # Repset_scdc_baron <- readRDS("~/Masterthesis/Deconvolution_results/Repset_scdc_baron.RDS")
 # 
@@ -28,19 +27,10 @@ library(RANN)
 # all(repset_meta$Name == colnames(repset))
 # rownames(repset_meta) <- repset_meta$Name
 # all(rownames(repset_meta) == rownames(Repset_scdc_baron$decon_res$prop.est.mvw))
-# 
-# ## form a dataframe out of the deco output --> maybe do this already in Execute_Deconvolution
-# decon_res <- as.data.frame(cbind(Repset_scdc_baron$decon_res$prop.est.mvw, t(Repset_scdc_baron$decon_res$yeval$spearmany.sample.table), 
-#                    t(Repset_scdc_baron$decon_res$yeval$mADy.sample.table), t(Repset_scdc_baron$decon_res$yeval$RMSDy.sample.table),
-#                    Repset_scdc_baron$p_value_per_sample, repset_meta$Grading))
-# colnames(decon_res) <- c(colnames(Repset_scdc_baron$decon_res$prop.est.mvw), "spearman", "mad", "rmsd",
-#                          "pearson_pval", "spearman_pval", "mad_pval", "rmsd_pval", "response") ## p-value
-# decon_res[,1:(ncol(Repset_scdc_baron$decon_res$prop.est.mvw)+7)] <- sapply(1:(ncol(Repset_scdc_baron$decon_res$prop.est.mvw)+7), 
-#                                                                            function(x) as.numeric(decon_res[,x]))
-# str(decon_res)
 
 
-train_ML_model <- function(trainData){
+
+train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "scale"){
   ## descriptive statistics (necessary? kinda)
   skimmed <- skim(trainData)
   
@@ -51,31 +41,32 @@ train_ML_model <- function(trainData){
   }
   
   ## preprocess data --> which method?
-  preProcess_range_model <- preProcess(trainData, method = "scale")
-  trainData <- predict(preProcess_range_model, newdata = decon_res)
-  
-  
-  ## make repeatedcv on train data and predict on hold out dataset
-  
+  if (preprocess){
+    preProcess_method_model <- preProcess(trainData, method = preprocess_method)
+    trainData <- predict(preProcess_method_model, newdata = trainData)
+  }
   
   ## feature selection
   subsets <- c(1:8)
   ctrl <- rfeControl(functions = rfFuncs,
                      method = "repeatedcv",
-                     repeats = 5,
+                     number = 5,
+                     repeats = 10,
                      verbose = FALSE)
   
   rfProfile <- rfe(x = trainData[,-ncol(trainData)], 
                    y = trainData$response,
                    sizes = subsets,
-                   rfeControl = ctrl)
+                   rfeControl = ctrl,
+                   metric = "Accuracy",)
   #rfProfile
   #predictors(rfProfile)
   
-  ## train RF model and predict on training data itself
+  ## train RF model
   fitControl <- trainControl(
-    method = "cv",
-    number = 10,
+    method = "repeatedcv",
+    number = 5,
+    repeats = 10,
     sampling = "down",
     savePred=T
   )
@@ -87,13 +78,12 @@ train_ML_model <- function(trainData){
                     trControl = fitControl, 
                     type = "Classification",
                     ntree = 500)
-  fitted <- predict(model_rf)
+  #fitted <- predict(model_rf)
   varimp_rf <- varImp(model_rf)
-  plot(varimp_rf)
-  
+  #plot(varimp_rf)
   
   ## train on selected features
-  trainData_sel <- trainData[, predictors(rfProfile)]
+  trainData_sel <- trainData[, predictors(rfProfile)[1:5]]
   model_rf_sel <- train(x = trainData_sel, 
                         y = trainData$response, 
                         method = 'rf', 
@@ -103,8 +93,38 @@ train_ML_model <- function(trainData){
                         ntree = 500)
   fitted_sel <- predict(model_rf_sel)
   varimp_rf_sel <- varImp(model_rf_sel)
-  plot(varimp_rf_sel)
+  #plot(varimp_rf_sel)
   
+  train_output <- list("rf_model_whole" = model_rf, "rf_model_sel" = model_rf_sel, 
+                       "varimp_whole" = varimp_rf, "varimp_sel" = varimp_rf_sel)
+  return(train_output)
+}
+
+
+test_ML_model <- function(train_output, testData, true_labels,  preprocess = FALSE, preprocess_method = "scale"){ ## test data, aka hold out set
+  ## descriptive statistics
+  skimmed <- skim(testData)
+  
+  ## impute missing values if there are any
+  if (any(skimmed$n_missing > 0)){
+    preProcess_missingdata_model <- preProcess(testData, method = "knnImpute")
+    testData <- predict(preProcess_missingdata_model, newdata = testData)
+  }
+  
+  ## preprocess data 
+  if (preprocess){
+    preProcess_method_model <- preProcess(testData, method = preprocess_method)
+    testData <- predict(preProcess_method_model, newdata = testData)
+  }
+  
+  predicted_whole <- predict(train_output$rf_model_whole, testData)
+  predicted_sel <- predict(train_output$rf_model_sel, testData)
+  con_mat_whole <- caret::confusionMatrix(data = predicted_whole, reference = true_labels, mode = "everything")
+  con_mat_sel <- caret::confusionMatrix(data = predicted_sel, reference = true_labels, mode = "everything")
+  
+  test_output <- list("predicted_whole" = predicted_whole, "con_mat_whole" = con_mat_whole,
+                      "predicted_sel" = predicted_sel, "con_mat_sel" = con_mat_sel)
+  return(test_output)
 }
 
 
@@ -112,53 +132,41 @@ train_ML_model <- function(trainData){
 
 ## split into training and test set (make it optional?)
 set.seed(4)
+decon_res <- prepare_decon_res(decon_res = Repset_scdc_baron, clinical_char = repset_meta$Grading, p_value = TRUE)
 trainRowNumbers <- createDataPartition(decon_res$response, p = 0.8, list = FALSE)
 trainData <- decon_res[trainRowNumbers,]
 testData <- decon_res[-trainRowNumbers,]
-x = trainData[, - ncol(trainData)]
-y = trainData$response
+train_output <- train_ML_model(trainData = trainData, preprocess = TRUE)
+test_output <- test_ML_model(train_output = train_output, testData = testData[, -ncol(testData)], true_labels = testData$response, preprocess = TRUE)
+
+#x = trainData[, - ncol(trainData)]
+#y = trainData$response
 
 ## analyze feature importance
-featurePlot(x = trainData[, - ncol(trainData)], 
-            y = factor(trainData$response), 
-            plot = "box",
-            strip=strip.custom(par.strip.text=list(cex=.7)),
-            scales = list(x = list(relation="free"), 
-                          y = list(relation="free")))
+# featurePlot(x = trainData[, - ncol(trainData)], 
+#             y = factor(trainData$response), 
+#             plot = "box",
+#             strip=strip.custom(par.strip.text=list(cex=.7)),
+#             scales = list(x = list(relation="free"), 
+#                           y = list(relation="free")))
+# 
+# featurePlot(x = trainData[, - ncol(trainData)], 
+#             y = factor(trainData$response), 
+#             plot = "density",
+#             strip=strip.custom(par.strip.text=list(cex=.7)),
+#             scales = list(x = list(relation="free"), 
+#                           y = list(relation="free")))
 
-featurePlot(x = trainData[, - ncol(trainData)], 
-            y = factor(trainData$response), 
-            plot = "density",
-            strip=strip.custom(par.strip.text=list(cex=.7)),
-            scales = list(x = list(relation="free"), 
-                          y = list(relation="free")))
 
-
-
-## predict on test data
-predicted <- predict(model_rf, testData)
-predicted_test <- predict(model_rf, trainData)
-con_mat <- confusionMatrix(reference = factor(testData$response), data = predicted, mode = "everything", positive = "G3")
-con_mat_test <- confusionMatrix(reference = factor(trainData$response), data = predicted_test, mode = "everything", positive = "G3")
 
 ## ensemble predictions
-library(caretEnsemble)
-trainControl <- trainControl(method="repeatedcv", 
-                            number=10, 
-                            repeats=3,
-                            savePredictions=TRUE, 
-                            classProbs=TRUE)
-algorithmList <- c('rf', 'svmRadial')
-models <- caretList(response~ ., data=trainData, trControl=trainControl, methodList=algorithmList) 
-results <- resamples(models)
-summary(results)
-
-
-## predict on test data
-predicted_sel <- predict(model_rf_sel, testData)
-predicted_test_sel <- predict(model_rf_sel, trainData_sel)
-con_mat_sel <- confusionMatrix(reference = factor(testData$response), data = predicted_sel, 
-                               mode = "everything", positive = "G3")
-con_mat_test_sel <- confusionMatrix(reference = factor(trainData$response), data = predicted_test_sel, 
-                                    mode = "everything", positive = "G3")
-
+# library(caretEnsemble)
+# trainControl <- trainControl(method="repeatedcv", 
+#                             number=10, 
+#                             repeats=3,
+#                             savePredictions=TRUE, 
+#                             classProbs=TRUE)
+# algorithmList <- c('rf', 'svmRadial')
+# models <- caretList(response~ ., data=trainData, trControl=trainControl, methodList=algorithmList) 
+# results <- resamples(models)
+# summary(results)
