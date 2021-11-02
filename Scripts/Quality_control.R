@@ -11,7 +11,7 @@
 
 library(SCDC)
 
-Quality_control <- function(sc_data, sc_meta, sc_path, multiple_donors, ...){
+Quality_control <- function(sc_data, sc_meta, sc_path, cell_types, multiple_donors, ...){
   message("Creating ExpressionSet object of the scRNA-seq dataset ..")
   
   if(ncol(sc_data) >= nrow(sc_meta)){
@@ -35,14 +35,14 @@ Quality_control <- function(sc_data, sc_meta, sc_path, multiple_donors, ...){
     
     message("Performing QC using SCDC_qc() of scRNA-seq dataset with multiple donors. This step may take some time ..")  
     
-    sc_qc <- SCDC_qc(sc.eset = sc_eset, ...) 
+    sc_qc <- SCDC_qc(sc.eset = sc_eset, ct.varname = "cluster", sample = "sample", ct.sub = cell_types, ...) 
     message("Done.")
     
   } else {
     
     message("Performing QC using SCDC_qc() of scRNA-seq dataset with one donor. This step may take some time ..")  
     
-    sc_qc <- SCDC_prop_ONE(sc.eset = sc_eset, ...) 
+    sc_qc <- SCDC_prop_ONE(sc.eset = sc_eset, ct.varname = "cluster", sample = "sample", ct.sub = cell_types, ...) 
     message("Done.")
     
   }

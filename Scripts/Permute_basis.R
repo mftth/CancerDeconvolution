@@ -12,6 +12,8 @@
 
 source("~/SCDC/SCDC/R/Basic_Functions.R")
 source("~/SCDC/SCDC/R/Deconvolution.R")
+source("~/SCDC/SCDC/R/ENSEMBLE.R")
+
 library(parallel)
 library(robustbase)
 
@@ -59,7 +61,7 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
       
       message("Performing deconvolution with ENSEMBLE ..")
       #sc_list <- lapply(sc_data, function(x) x$sc.eset.qc)
-      decon_res <- SCDC_ENSEMBLE(bulk.eset = bulk_eset, sc.eset.list = sc_data, 
+      decon_res <- SCDC_ENSEMBLE(bulk.eset = bulk_eset, sc.eset.list = sc_data, sc.basis.list = sc_basis,
                                  ct.varname = "cluster", sample = "sample", ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht -> make it soft coded
                                  ct.sub =  cell_types, ...) 
       decon_res <- calc_ens_res(ensemble_output =  decon_res)
@@ -105,17 +107,26 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
 }
 
 
-Create_basis <- function(multiple_donors, sc_data, cell_types){
-  if(multiple_donors){
+Create_basis <- function(sc_data, cell_types, ensemble, multiple_donors){
+  if(ensemble){
     
-    sc_basis <- SCDC_basis(x = sc_data, ct.sub = cell_types, ct.varname = "cluster", sample = "sample")  
+    sc_basis <- lapply(1:length(sc_data), function(idx){
+      if(multiple_donors[[idx]]){
+        SCDC_basis(x = sc_data[[idx]], ct.sub = cell_types, ct.varname = "cluster", sample = "sample") 
+      } else {
+        SCDC_basis_ONE(x = sc_data[[idx]], ct.sub = cell_types,  ct.varname = "cluster", sample = "sample")
+      }
+    })
     
   } else {
     
-    sc_basis <- SCDC_basis_ONE(x = sc_data, ct.sub = cell_types,  ct.varname = "cluster", sample = "sample")  
+    if(multiple_donors){
+      sc_basis <- SCDC_basis(x = sc_data, ct.sub = cell_types, ct.varname = "cluster", sample = "sample")  
+    } else {
+      sc_basis <- SCDC_basis_ONE(x = sc_data, ct.sub = cell_types,  ct.varname = "cluster", sample = "sample")  
+    }
     
   }
-  
   return(sc_basis)
 }
 
@@ -155,14 +166,16 @@ get_marker_genes <- function(decon_res){
 }
 
 
-get_permuted_basis_statistics <- function(marker_genes, bulk_data, sc_data, sc_basis, cell_types, multiple_donors, ...){
+get_permuted_basis_statistics <- function(marker_genes, bulk_data, bulk_meta, sc_data, sc_basis, cell_types, ensemble, multiple_donors, ...){
   
   ## generate permuted basis by shuffling gene labels of marker genes
   ## basis of only marker genes
   sc_basis_marker<- sc_basis
+  lapply(1:length(sc_basis_marker), function(basis){
   sc_basis_marker$basis <- sc_basis$basis[marker_genes$marker_genes,]
   sc_basis_marker$basis.mvw <- sc_basis$basis.mvw[marker_genes$marker_genes,]
   sc_basis_marker_rn <- rownames(sc_basis_marker$basis.mvw)
+  })
   
   ## basis of only non-marker genes
   sc_basis_nmarker <- sc_basis
@@ -194,8 +207,8 @@ get_permuted_basis_statistics <- function(marker_genes, bulk_data, sc_data, sc_b
   #rownames(sc_basis_shuffled$basis) <- shuffled_genes
   
   ## perform deconvolution of shuffled basis with Deconvolve_SCDC
-  decon_shuffled_res <- Deconvolve_SCDC(bulk_data = bulk_data, sc_data = sc_data, sc_basis = sc_basis_shuffled,  
-                                        cell_types = cell_types, multiple_donors = multiple_donors, ...)
+  decon_shuffled_res <- Deconvolve_SCDC(bulk_data = bulk_data, bulk_meta = bulk_meta, sc_data = sc_data, sc_basis = sc_basis_shuffled,  
+                                        cell_types = cell_types, ensemble = ensemble, multiple_donors = multiple_donors, ...)
   
   statistics_vec <- get_test_statistics_vec(bulk_data = bulk_data, decon_res = decon_shuffled_res)
   
@@ -203,15 +216,15 @@ get_permuted_basis_statistics <- function(marker_genes, bulk_data, sc_data, sc_b
 }
 
 
-Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, sc_data, cell_types, multiple_donors, ...){
+Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, bulk_meta, sc_data, cell_types, ensemble, multiple_donors, ...){
   
   ## Generate original basis matrix
-  sc_basis <- Create_basis(multiple_donors = multiple_donors, sc_data = sc_data,  cell_types = cell_types)
+  sc_basis <- Create_basis(sc_data = sc_data,  cell_types = cell_types, ensemble = ensemble, multiple_donors = multiple_donors)
   
   ## Deconvolution of whole bulk RNA-seq dataset with original basis
   message("Executing deconvolution of the whole bulk RNA-seq dataset ..")
-  decon_res <- Deconvolve_SCDC(bulk_data = bulk_data, sc_data = sc_data, sc_basis = sc_basis,  
-                               cell_types = cell_types, multiple_donors = multiple_donors, ...)
+  decon_res <- Deconvolve_SCDC(bulk_data = bulk_data, bulk_meta = bulk_meta, sc_data = sc_data, sc_basis = sc_basis,  
+                               cell_types = cell_types, ensemble = ensemble, multiple_donors = multiple_donors, ...)
   statistics_obs <- get_test_statistics_vec(bulk_data = bulk_data, decon_res = decon_res)
   
   ## Deconvolution of shuffled basis
@@ -220,10 +233,12 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, s
   
   ## Approximate distribution of test statistic
   statistics_sampled <- mclapply(1:nrep, function(x) get_permuted_basis_statistics(marker_genes = marker_genes,
-                                                                                   bulk_data = bulk_data, 
+                                                                                   bulk_data = bulk_data,
+                                                                                   bulk_meta = bulk_meta,
                                                                                    sc_data = sc_data,
                                                                                    sc_basis = sc_basis, 
                                                                                    cell_types = cell_types, 
+                                                                                   ensemble = ensemble,
                                                                                    multiple_donors = multiple_donors, ...),
                                  mc.cores = ncores, mc.silent = silent)
   pearson_matrix_sampled <- sapply(statistics_sampled, function(x) x$pearson_vec)
