@@ -158,49 +158,73 @@ get_marker_genes <- function(decon_res){
   marker_genes_ct <- lapply(1:length(quantiles), function(x) {
     which(decon_res$basis.mvw[,x]>quantiles[x])
   })
-  marker_genes <- Reduce(union, marker_genes_ct)
+  marker_genes <- Reduce(union, lapply(marker_genes_ct, function(x) names(x)))
+  marker_genes_idx <- Reduce(union, marker_genes_ct)
   n_marker_genes <- length(marker_genes)
   
-  list_marker_genes <- list("marker_genes" = marker_genes, "n_marker_genes" = n_marker_genes)
+  list_marker_genes <- list("marker_genes" = marker_genes, "marker_genes_idx" = marker_genes_idx, "n_marker_genes" = n_marker_genes)
   return(list_marker_genes)
 }
 
 
 get_permuted_basis_statistics <- function(marker_genes, bulk_data, bulk_meta, sc_data, sc_basis, cell_types, ensemble, multiple_donors, ...){
   
+  if(!ensemble){
+    sc_basis <- list(sc_basis)
+  }
+  
   ## generate permuted basis by shuffling gene labels of marker genes
   ## basis of only marker genes
   sc_basis_marker<- sc_basis
-  lapply(1:length(sc_basis_marker), function(basis){
-  sc_basis_marker$basis <- sc_basis$basis[marker_genes$marker_genes,]
-  sc_basis_marker$basis.mvw <- sc_basis$basis.mvw[marker_genes$marker_genes,]
-  sc_basis_marker_rn <- rownames(sc_basis_marker$basis.mvw)
-  })
+  for (i in 1:length(sc_basis)) {
+    sc_basis_marker[[i]]$basis <- sc_basis[[i]]$basis[marker_genes$marker_genes,]
+    sc_basis_marker[[i]]$basis.mvw <- sc_basis[[i]]$basis.mvw[marker_genes$marker_genes,]
+  }
+  sc_basis_marker_rn <- lapply(sc_basis_marker, function(x) rownames(x$basis.mvw))
+  # lapply(1:length(sc_basis), function(idx){
+  #   sc_basis_marker[[idx]]$basis <- sc_basis[[idx]]$basis[marker_genes$marker_genes,]
+  #   sc_basis_marker[[idx]]$basis.mvw <- sc_basis[[idx]]$basis.mvw[marker_genes$marker_genes,]
+  # })
   
   ## basis of only non-marker genes
   sc_basis_nmarker <- sc_basis
-  sc_basis_nmarker$basis <- sc_basis$basis[-marker_genes$marker_genes,]
-  sc_basis_nmarker$basis.mvw <- sc_basis$basis.mvw[-marker_genes$marker_genes,]
+  nmarker_genes <- lapply(1:length(sc_basis), function(x) setdiff(rownames(sc_basis[[x]]$basis), 
+                                                                  rownames(sc_basis_marker[[x]]$basis)))
+  for (i in 1:length(sc_basis)) {
+    sc_basis_nmarker[[i]]$basis <- sc_basis[[i]]$basis[nmarker_genes[[i]],]
+    sc_basis_nmarker[[i]]$basis.mvw <- sc_basis[[i]]$basis.mvw[nmarker_genes[[i]],]
+  }
   
   ## shuffle marker-gene-many genes from non-marker genes and set as labels for marker genes
-  shuffled_genes_idx <- sample(1:nrow(sc_basis_nmarker$basis.mvw), length(sc_basis_marker_rn))
-  rownames(sc_basis_marker$basis.mvw) <- rownames(sc_basis_nmarker$basis.mvw)[shuffled_genes_idx]
-  rownames(sc_basis_marker$basis) <- rownames(sc_basis_nmarker$basis.mvw)[shuffled_genes_idx]
+  shuffled_genes_idx <- lapply(1:length(sc_basis_nmarker), function(x) sample(1:nrow(sc_basis_nmarker[[x]]$basis.mvw), 
+                                                                              length(sc_basis_marker_rn[[x]])))
+  for (i in 1:length(sc_basis)) {
+    rownames(sc_basis_marker[[i]]$basis.mvw) <- rownames(sc_basis_nmarker[[i]]$basis.mvw)[shuffled_genes_idx[[i]]]
+    rownames(sc_basis_marker[[i]]$basis) <- rownames(sc_basis_nmarker[[i]]$basis.mvw)[shuffled_genes_idx[[i]]]
+  }
   
   ## set marker genes as labels for shuffled non-marker genes, i.e. switch labels between
-  shuffled_genes <- sample(sc_basis_marker_rn)
-  rownames(sc_basis_nmarker$basis.mvw)[shuffled_genes_idx] <- shuffled_genes
-  rownames(sc_basis_nmarker$basis)[shuffled_genes_idx] <- shuffled_genes
+  shuffled_genes <- lapply(sc_basis_marker_rn, function(x) sample(x))
+  for (i in 1:length(sc_basis)) {
+    rownames(sc_basis_nmarker[[i]]$basis.mvw)[shuffled_genes_idx[[i]]] <- shuffled_genes[[i]]
+    rownames(sc_basis_nmarker[[i]]$basis)[shuffled_genes_idx[[i]]] <- shuffled_genes[[i]]
+  }
   
   ## put both matrices together and shuffle rows
-  shuffled_basis <- rbind(sc_basis_nmarker$basis, sc_basis_marker$basis)
-  shuffled_basis.mvw <- rbind(sc_basis_nmarker$basis.mvw, sc_basis_marker$basis.mvw)
-  shuffled_idx <- sample(1:nrow(shuffled_basis.mvw))
-  shuffled_basis <- shuffled_basis[shuffled_idx,]
-  shuffled_basis.mvw <- shuffled_basis.mvw[shuffled_idx,]
+  shuffled_basis <- lapply(1:length(sc_basis), function(x) rbind(sc_basis_nmarker[[x]]$basis, sc_basis_marker[[x]]$basis))
+  shuffled_basis.mvw <- lapply(1:length(sc_basis), function(x) rbind(sc_basis_nmarker[[x]]$basis.mvw, sc_basis_marker[[x]]$basis.mvw))
+  shuffled_idx <- lapply(1:length(sc_basis), function(x) sample(1:nrow(shuffled_basis.mvw[[x]])))
+  shuffled_basis <- lapply(1:length(sc_basis), function(x) shuffled_basis[[x]][shuffled_idx[[x]],])
+  shuffled_basis.mvw <- lapply(1:length(sc_basis), function(x) shuffled_basis.mvw[[x]][shuffled_idx[[x]],])
   sc_basis_shuffled <- sc_basis
-  sc_basis_shuffled$basis <- shuffled_basis
-  sc_basis_shuffled$basis.mvw <- shuffled_basis.mvw
+  for (i in 1:length(sc_basis)) {
+    sc_basis_shuffled[[i]]$basis <- shuffled_basis[[i]]
+    sc_basis_shuffled[[i]]$basis.mvw <- shuffled_basis.mvw[[i]]
+  }
+  
+  if(!ensemble){
+    sc_basis_shuffled <- sc_basis_shuffled[[1]]
+  }
   
   #shuffled_genes <- sample(rownames(sc_basis_shuffled$basis.mvw))
   #rownames(sc_basis_shuffled$basis.mvw) <- shuffled_genes
@@ -270,6 +294,7 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, b
   message("Done.")
   
   decon_res_pval <- list("decon_res" = decon_res, 
+                         "statistics_observed" = statistics_obs,
                          "statistics_sampled" = statistics_sampled,
                          "p_value_per_sample" = p_value_per_sample,
                          "p_value_wy_pearson" = p_value_wy_pearson,

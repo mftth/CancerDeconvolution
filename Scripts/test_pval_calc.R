@@ -4,8 +4,7 @@
 ## 2) known/simulated data; expectation: p-value has expected value
 ## 3) real data
 
-source("~/Masterthesis/CancerDeconvolution/Scripts/Deconvolve_SCDC.R")
-source("~/Masterthesis/CancerDeconvolution/Scripts/Calculate_pvalue.R")
+source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 
 
 library(SCDC)

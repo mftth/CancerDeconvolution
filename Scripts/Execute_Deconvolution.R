@@ -10,20 +10,20 @@ source("~/SCDC/SCDC/R/Deconvolution.R")
 
 prepare_decon_res <- function(decon_res, clinical_char, p_value){
   if (p_value){
-    decon_res_prepped <- as.data.frame(cbind(decon_res$decon_res$prop.est.mvw, t(decon_res$decon_res$yeval$spearmany.sample.table), 
-                                             t(decon_res$decon_res$yeval$mADy.sample.table), t(decon_res$decon_res$yeval$RMSDy.sample.table),
-                                             decon_res$p_value_per_sample, clinical_char))
-    colnames(decon_res_prepped) <- c(colnames(decon_res$decon_res$prop.est.mvw), "spearman", "mad", "rmsd", 
+    decon_res_prepped <- as.data.frame(cbind(decon_res$decon_res$prop.est.mvw, decon_res$statistics_observed$pearson_vec, 
+                                             decon_res$statistics_observed$spearman_vec, decon_res$statistics_observed$mad_vec,
+                                             decon_res$statistics_observed$rmsd_vec, decon_res$p_value_per_sample, clinical_char))
+    colnames(decon_res_prepped) <- c(colnames(decon_res$decon_res$prop.est.mvw), "pearson", "spearman", "mad", "rmsd", 
                                      "pearson_pval", "spearman_pval", "mad_pval", "rmsd_pval", "response")
-    decon_res_prepped[,1:(ncol(decon_res$decon_res$prop.est.mvw)+7)] <- sapply(1:(ncol(decon_res$decon_res$prop.est.mvw)+7), 
+    decon_res_prepped[,1:(ncol(decon_res$decon_res$prop.est.mvw)+8)] <- sapply(1:(ncol(decon_res$decon_res$prop.est.mvw)+8), 
                                                                                function(x) as.numeric(decon_res_prepped[,x]))
     decon_res_prepped$response <- as.factor(decon_res_prepped$response)
   } else {
-    decon_res_prepped <- as.data.frame(cbind(decon_res$prop.est.mvw, t(decon_res$yeval$spearmany.sample.table), 
-                                             t(decon_res$yeval$mADy.sample.table), t(decon_res$yeval$RMSDy.sample.table),
-                                             clinical_char))
-    colnames(decon_res_prepped) <- c(colnames(decon_res$prop.est.mvw), "spearman", "mad", "rmsd", "response")
-    decon_res_prepped[,1:(ncol(decon_res$prop.est.mvw)+3)] <- sapply(1:(ncol(decon_res$prop.est.mvw)+3), 
+    decon_res_prepped <- as.data.frame(cbind(decon_res$decon_res$prop.est.mvw, decon_res$statistics_observed$pearson_vec, 
+                                             decon_res$statistics_observed$spearman_vec, decon_res$statistics_observed$mad_vec,
+                                             decon_res$statistics_observed$rmsd_vec, clinical_char))
+    colnames(decon_res_prepped) <- c(colnames(decon_res$prop.est.mvw), "pearson", "spearman", "mad", "rmsd", "response")
+    decon_res_prepped[,1:(ncol(decon_res$prop.est.mvw)+4)] <- sapply(1:(ncol(decon_res$prop.est.mvw)+4), 
                                                                      function(x) as.numeric(decon_res_prepped[,x]))
     decon_res_prepped$response <- as.factor(decon_res_prepped$response)
   }

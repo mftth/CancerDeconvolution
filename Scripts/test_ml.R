@@ -21,13 +21,13 @@ repset_meta <- readRDS("~/Masterthesis/Data/Bulk/RepSet/repset_meta.RDS")
 qc_baron <- readRDS(file = "~/Praktikum/Data/Baron/qc_baron_exo.RDS")
 
 ## create basis
-baron_basis <- Create_basis(multiple_donors = TRUE, sc_data = qc_baron$sc.eset.qc, 
-                            cell_types = c("alpha", "beta", "gamma", "delta", "acinar", "ductal"))
-
-## deconvolve once
-repset_baron_scdc <- Deconvolve_SCDC(bulk_data = repset, bulk_meta = repset_meta, sc_data = qc_baron$sc.eset.qc,
-                                     sc_basis = baron_basis, cell_types = c("alpha", "beta", "gamma", "delta", "acinar", "ductal"),
-                                     ensemble = FALSE, multiple_donors = TRUE)
+# baron_basis <- Create_basis(multiple_donors = TRUE, sc_data = qc_baron$sc.eset.qc, 
+#                             cell_types = c("alpha", "beta", "gamma", "delta", "acinar", "ductal"))
+# 
+# ## deconvolve once
+# repset_baron_scdc <- Deconvolve_SCDC(bulk_data = repset, bulk_meta = repset_meta, sc_data = qc_baron$sc.eset.qc,
+#                                      sc_basis = baron_basis, cell_types = c("alpha", "beta", "gamma", "delta", "acinar", "ductal"),
+#                                      ensemble = FALSE, multiple_donors = TRUE)
 
 ## perform deconvolution and calc p-value
 repset_decon <- Calculate_pvalue(nrep = 1000, ncores = 10, silent = TRUE, bulk_data = repset,
