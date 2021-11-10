@@ -49,8 +49,8 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
     method = "repeatedcv",
     number = 5,
     repeats = 10,
-    sampling = "down",
-    savePred=T
+    sampling = "down", # not specified for regression
+    savePred = TRUE
   )
   
   ## train RF model on all features
@@ -58,7 +58,7 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
   model_rf <- train(x = trainData[, - ncol(trainData)], 
                     y = trainData$response, 
                     method = 'rf', 
-                    metric = "Accuracy",
+                    metric = "Accuracy", # RMSE for regression
                     trControl = fitControl, 
                     type = "Classification",
                     ntree = 500)

@@ -18,6 +18,7 @@ library(parallel)
 library(robustbase)
 
 calc_ens_res <- function(ensemble_output){
+  
   ensemble_res <- list()
   weights <- ensemble_output$w_table[1, 1:(ncol(ensemble_output$w_table)-4)] # take measure inverse_SSE as recommended by Dong et al --> hard coded
   prop_list <- lapply(ensemble_output$prop.list, function(x) x$prop.est.mvw)
@@ -30,6 +31,7 @@ calc_ens_res <- function(ensemble_output){
   ensemble_res$basis.mvw <- Reduce("+", basistmp)
   
   return(ensemble_res)
+  
 }
 
 
@@ -108,6 +110,7 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
 
 
 Create_basis <- function(sc_data, cell_types, ensemble, multiple_donors){
+  
   if(ensemble){
     
     sc_basis <- lapply(1:length(sc_data), function(idx){
@@ -128,6 +131,7 @@ Create_basis <- function(sc_data, cell_types, ensemble, multiple_donors){
     
   }
   return(sc_basis)
+  
 }
 
 

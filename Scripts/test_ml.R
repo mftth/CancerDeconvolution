@@ -51,8 +51,14 @@ test_output <- test_ML_model(train_output = train_output, testData = testData[, 
 
 
 
+library(plotROC)
+selectedIndices <- train_output$rf_model_whole$pred$mtry == train_output$rf_model_whole$bestTune[[1]]
+g <- ggplot(train_output$rf_model_whole$pred[selectedIndices, ], aes(m=pred, d=factor(obs, levels = c("R", "M")))) +  # bei levels gib die klassen deiner response variable an
+  geom_roc(n.cuts=0) + 
+  coord_equal() +
+  style_roc()
 
-
+g + annotate("text", x=0.75, y=0.25, label=paste("AUC =", round((calc_auc(g))$AUC, 4)))
 
 
 
