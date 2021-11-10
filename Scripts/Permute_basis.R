@@ -285,7 +285,7 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, b
   p_value_wy_rmsd_per_sample <- sapply(1:nrow(rmsd_matrix_sampled), 
                                        function(x) (sum(abs(rmsd_matrix_sampled[x,]) <= abs(statistics_obs$rmsd_vec[x]))+1)/(ncol(rmsd_matrix_sampled)+1))
   
-  p_value_per_sample <- data.frame(Pearson = p_value_wy_mad_per_sample,
+  p_value_per_sample <- data.frame(Pearson = p_value_wy_pearson_per_sample,
                                    Spearman = p_value_wy_spearman_per_sample,
                                    mAD = p_value_wy_mad_per_sample,
                                    RMSD = p_value_wy_rmsd_per_sample,
