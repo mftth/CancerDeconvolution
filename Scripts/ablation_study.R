@@ -3,20 +3,12 @@
 ## perform deconvolution for each subset of cell types
 ## observe differences in p-value and performance
 
-# - man kann grundmenge an ct angeben (default NULL)
-# - man gibt an welche ct ausprobiert werden soll
-# vec <- c("as", "ai", "ar")
-# rje::powerSet(vec)
-# - jede kombi erhält einen  namen
-# - für jede ausgewählte kombi wird calc_pval ausgeführt (verteilt über #threads)
-#         - es werden abbildungen erstellt über die performance jeder kombi erstellt (pwert der vier metriken)
-#         - gibt es signifikante unterschiede zwischen den kombis?
-
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 
 library(parallel)
 library(robustbase)
 library(rje)
+library(ggplot2)
 
 
 repset <- readRDS("~/Masterthesis/Data/Bulk/RepSet/repset.RDS")
@@ -25,7 +17,8 @@ qc_baron <- readRDS(file = "~/Praktikum/Data/Baron/qc_baron_exo.RDS")
 ct_set <- c("alpha", "beta", "gamma", "delta")
 sub_ct_set <- c("acinar", "ductal")
 
-ablation_study <- function(ct_set = NULL, sub_ct_set, ...) { ## remaining input of Calculate_pvalue() except for cell_types
+ablation_study <- function(ct_set = NULL, sub_ct_set, ...) { 
+  ## remaining input of Calculate_pvalue() except for cell_types
   
   ## compute power set of the cell types which should be experimented with
   power_ct_set <- rje::powerSet(sub_ct_set)
@@ -81,10 +74,14 @@ ablation_study <- function(ct_set = NULL, sub_ct_set, ...) { ## remaining input 
   pval_metrics$pval_mad$value <- as.numeric(pval_metrics$pval_mad$value)
   pval_metrics$pval_rmsd$value <- as.numeric(pval_metrics$pval_rmsd$value)
   
-  pval_metrics$pval_pearson$decon_res <- factor(pval_metrics$pval_pearson$decon_res, levels = names(p_value_per_subset))
-  pval_metrics$pval_spearman$decon_res <- factor(pval_metrics$pval_spearman$decon_res, levels = names(p_value_per_subset))
-  pval_metrics$pval_mad$decon_res <- factor(pval_metrics$pval_mad$decon_res, levels = names(p_value_per_subset))
-  pval_metrics$pval_rmsd$decon_res <- factor(pval_metrics$pval_rmsd$decon_res, levels = names(p_value_per_subset))
+  pval_metrics$pval_pearson$decon_res <- factor(pval_metrics$pval_pearson$decon_res, 
+                                                levels = names(p_value_per_subset))
+  pval_metrics$pval_spearman$decon_res <- factor(pval_metrics$pval_spearman$decon_res, 
+                                                 levels = names(p_value_per_subset))
+  pval_metrics$pval_mad$decon_res <- factor(pval_metrics$pval_mad$decon_res, 
+                                            levels = names(p_value_per_subset))
+  pval_metrics$pval_rmsd$decon_res <- factor(pval_metrics$pval_rmsd$decon_res, 
+                                             levels = names(p_value_per_subset))
   
   box_pearson <- ggplot(pval_metrics$pval_pearson, aes(x = decon_res, y = value)) +
     geom_boxplot() +
@@ -115,8 +112,46 @@ ablation_study <- function(ct_set = NULL, sub_ct_set, ...) { ## remaining input 
     coord_flip()
   
   # give deconres with lowest median p value of each kind
-  # give deconres with best median metric of each kind 
+  pearson_min_median_pval <- sapply(decon_res_per_subset, 
+                                              function(x) median(x$p_value_per_sample$Pearson))
+  pearson_min_median_pval <- pearson_min_median_pval[which(pearson_min_median_pval == 
+                                                             min(pearson_min_median_pval))]
   
+  spearman_min_median_pval <- sapply(decon_res_per_subset, 
+                                              function(x) median(x$p_value_per_sample$Spearman))
+  spearman_min_median_pval <- spearman_min_median_pval[which(spearman_min_median_pval == 
+                                                               min(spearman_min_median_pval))]
+  
+  mad_min_median_pval <- sapply(decon_res_per_subset, 
+                                              function(x) median(x$p_value_per_sample$mAD))
+  mad_min_median_pval <- mad_min_median_pval[which(mad_min_median_pval ==
+                                                     min(mad_min_median_pval))]
+  
+  rmsd_min_median_pval <- sapply(decon_res_per_subset, 
+                                              function(x) median(x$p_value_per_sample$RMSD))
+  rmsd_min_median_pval <- rmsd_min_median_pval[which(rmsd_min_median_pval ==
+                                                       min(rmsd_min_median_pval))]
+    
+  # give deconres with best median metric of each kind 
+  pearson_max_median <- sapply(decon_res_per_subset, 
+                                         function(x) median(x$statistics_observed$pearson_vec))
+  pearson_max_median <- pearson_max_median[which(pearson_max_median ==
+                                                   max(pearson_max_median))]
+  
+  spearman_max_median <- sapply(decon_res_per_subset, 
+                                          function(x) median(x$statistics_observed$spearman_vec))
+  spearman_max_median <- spearman_max_median[which(spearman_max_median ==
+                                               max(spearman_max_median))]
+  
+  mad_min_median <- sapply(decon_res_per_subset, 
+                                     function(x) median(x$statistics_observed$mad_vec))
+  mad_min_median <- mad_min_median[which(mad_min_median ==
+                                           min(mad_min_median))]
+  
+  rmsd_min_median <- sapply(decon_res_per_subset, 
+                                      function(x) median(x$statistics_observed$rmsd_vec))
+  rmsd_min_median <- rmsd_min_median[which(rmsd_min_median ==
+                                             min(rmsd_min_median))]
   
   ablation_result <- list("decon_res_per_subset" = decon_res_per_subset,
                           "boxplot_pvals" = 
@@ -125,14 +160,15 @@ ablation_study <- function(ct_set = NULL, sub_ct_set, ...) { ## remaining input 
                                  "boxplot_pval_mad" = box_mad,
                                  "boxplot_pval_rmsd" = box_rmsd),
                           "best_pval_models" =
-                            list(),
+                            list("min_median_pval_pearson" = pearson_min_median_pval,
+                                 "min_median_pval_spearman" = spearman_min_median_pval,
+                                 "min_median_pval_mad" = mad_min_median_pval,
+                                 "min_median_pval_rmsd" = rmsd_min_median_pval),
                           "best_models" = 
-                            list()
+                            list("max_median_pearson" = pearson_max_median,
+                                 "max_median_spearman" = spearman_max_median,
+                                 "min_median_mad" = mad_min_median,
+                                 "min_medianl_rmsd" = rmsd_min_median)
                           )
-  
+  return(ablation_result)
 }
-
-
-
-
-
