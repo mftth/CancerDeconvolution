@@ -9,7 +9,8 @@
 ## output:
 ### qc'ed scRNA-seq dataset saved in path+name
 
-library(SCDC)
+source("~/SCDC/SCDC/R/Basic_Functions.R")
+source("~/SCDC/SCDC/R/Deconvolution.R")
 
 Quality_control <- function(sc_data, sc_meta, sc_path, cell_types, multiple_donors, ...){
   message("Creating ExpressionSet object of the scRNA-seq dataset ..")
@@ -42,7 +43,7 @@ Quality_control <- function(sc_data, sc_meta, sc_path, cell_types, multiple_dono
     
     message("Performing QC using SCDC_qc() of scRNA-seq dataset with one donor. This step may take some time ..")  
     
-    sc_qc <- SCDC_prop_ONE(sc.eset = sc_eset, ct.varname = "cluster", sample = "sample", ct.sub = cell_types, ...) 
+    sc_qc <- SCDC_qc_ONE(sc.eset = sc_eset, ct.varname = "cluster", sample = "sample", ct.sub = cell_types, ...) 
     message("Done.")
     
   }
