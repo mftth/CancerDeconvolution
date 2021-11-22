@@ -53,7 +53,7 @@ ablation_study <- function(ct_combi_list = NULL, ct_set = NULL, sub_ct_set = NUL
   pval_pearson <- matrix(ncol = 2)
   colnames(pval_pearson) <- c("decon_res", "value")
   pval_spearman <- matrix(ncol = 2)
-  colnames(pval_spearman) <- c("decon_res", "value")q
+  colnames(pval_spearman) <- c("decon_res", "value")
   pval_mad <- matrix(ncol = 2)
   colnames(pval_mad) <- c("decon_res", "value")
   pval_rmsd <- matrix(ncol = 2)
