@@ -11,8 +11,10 @@ library(rje)
 library(ggplot2)
 library(pheatmap)
 
-ablation_study <- function(ct_combi_list = NULL, ct_set = NULL, sub_ct_set = NULL, res_path, ...) { 
+ablation_study <- function(ct_combi_list = NULL, ct_set = NULL, sub_ct_set = NULL, res_path, clinical_char, ...) { 
   ## remaining input of Calculate_pvalue() except for cell_types
+  ## clinical char should be a dataframe containing one or more clinical variables of interest 
+  ## a.k.a. meta data of the bulk RNA-seq samples 
   
   if (is.null(ct_combi_list) && is.null(ct_set) && is.null(sub_ct_set)){
     stop("Either provide a set of cell types to be investigated or the combinations of cell types of interest!")
@@ -130,22 +132,26 @@ ablation_study <- function(ct_combi_list = NULL, ct_set = NULL, sub_ct_set = NUL
   colnames(pearson_pheat) <- rownames(p_value_per_subset[[1]])
   rownames(pearson_pheat) <- names(p_value_per_subset)
   pheatmap_pearson <- pheatmap(pearson_pheat, 
-                               main = "P-value of Pearson correlation of deconvolution results") 
+                               main = "P-value of Pearson correlation of deconvolution results",
+                               annotation_col = clinical_char) 
   spearman_pheat <- Reduce(rbind, lapply(p_value_per_subset, function(x) t(x$Spearman)))
   colnames(spearman_pheat) <- rownames(p_value_per_subset[[1]])
   rownames(spearman_pheat) <- names(p_value_per_subset)
   pheatmap_spearman <- pheatmap(spearman_pheat, 
-                               main = "P-value of Spearman correlation of deconvolution results") 
+                                main = "P-value of Spearman correlation of deconvolution results",
+                                annotation_col = clinical_char) 
   mad_pheat <- Reduce(rbind, lapply(p_value_per_subset, function(x) t(x$mAD)))
   colnames(mad_pheat) <- rownames(p_value_per_subset[[1]])
   rownames(mad_pheat) <- names(p_value_per_subset)
   pheatmap_mad <- pheatmap(mad_pheat,  
-                               main = "P-value of mAD correlation of deconvolution results") 
+                           main = "P-value of mAD correlation of deconvolution results",
+                           annotation_col = clinical_char) 
   rmsd_pheat <- Reduce(rbind, lapply(p_value_per_subset, function(x) t(x$RMSD)))
   colnames(rmsd_pheat) <- rownames(p_value_per_subset[[1]])
   rownames(rmsd_pheat) <- names(p_value_per_subset)
   pheatmap_rmsd <- pheatmap(rmsd_pheat, 
-                               main = "P-value of RMSD correlation of deconvolution results") 
+                            main = "P-value of RMSD correlation of deconvolution results",
+                            annotation_col = clinical_char) 
   
   # give deconres with lowest median p value of each kind
   pearson_min_median_pval <- sapply(decon_res_per_subset, 
