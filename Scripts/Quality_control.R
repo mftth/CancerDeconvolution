@@ -11,6 +11,7 @@
 
 source("~/SCDC/SCDC/R/Basic_Functions.R")
 source("~/SCDC/SCDC/R/Deconvolution.R")
+library(pheatmap)
 
 Quality_control <- function(sc_data, sc_meta, sc_path, cell_types, multiple_donors, ...){
   message("Creating ExpressionSet object of the scRNA-seq dataset ..")
