@@ -74,5 +74,25 @@ chapuy <- apply(chapuy, MARGIN = c(1,2), FUN = as.numeric)
 
 chapuy_decon <- Calculate_pvalue(nrep = 1000, ncores = 10, bulk_data = chapuy,
                                  bulk_meta = chapuy_meta, sc_data = qc_senescence$sc.eset.qc,
-                                 cell_types = c("PS", "ADT", "ADT_OHT"),
+                                 cell_types = c("PS", "ADR", "ADR_OHT"),
+                                 ensemble = FALSE, multiple_donors = FALSE)
+## ADR_OHT is completely 1, always
+## try normalize scRNA-seq data
+
+#library(edgeR)
+#library(limma)
+#senescence_norm <- edgeR::DGEList(senescence)
+#v = limma::voom(senescence_norm, design = NULL)
+#senescence_norm <- v$E
+
+senescence_norm <- (senescence - colMeans(senescence)) / apply(senescence, MARGIN = 2, FUN = sd)
+
+qc_senescence_norm <- Quality_control(sc_data = senescence_norm, sc_meta = phenotypes, 
+                                 sc_path = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/qc_senescence_norm.RDS",
+                                 cell_types = c("PS", "ADR", "ADR_OHT"),
+                                 multiple_donors = FALSE)
+
+chapuy_decon_norm <- Calculate_pvalue(nrep = 1000, ncores = 10, bulk_data = chapuy,
+                                 bulk_meta = chapuy_meta, sc_data = qc_senescence_norm$sc.eset.qc,
+                                 cell_types = c("PS", "ADR", "ADR_OHT"),
                                  ensemble = FALSE, multiple_donors = FALSE)
