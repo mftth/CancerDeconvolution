@@ -89,23 +89,28 @@ pheatmap(mouse_decon$decon_res$prop.est.mvw,
                                         row.names = rownames(mouse_meta)), 
          show_rownames = FALSE)
 
-## ADR_OHT is completely 1, always
+## ADR_ki67_high is almost completely 1, always
 ## try normalize scRNA-seq data
 
-#library(edgeR)
-#library(limma)
-#senescence_norm <- edgeR::DGEList(senescence)
-#v = limma::voom(senescence_norm, design = NULL)
-#senescence_norm <- v$E
+#senescence_norm <- (senescence - colMeans(senescence)) / apply(senescence, MARGIN = 2, FUN = sd)
+# qc doesnt work then for sample 612, 2110
 
-senescence_norm <- (senescence - colMeans(senescence)) / apply(senescence, MARGIN = 2, FUN = sd)
+library(edgeR)
+library(limma)
+senescence_norm <- edgeR::DGEList(senescence)
+v = limma::voom(senescence_norm, design = NULL)
+senescence_norm <- v$E
+
 
 qc_senescence_norm <- Quality_control(sc_data = senescence_norm, sc_meta = phenotypes, 
-                                      sc_path = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/qc_senescence_norm.RDS",
-                                      cell_types = c("PS", "ADR", "ADR_OHT"),
+                                      sc_path = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/qc_senescence_mouse_norm.RDS",
+                                      cell_types = unique(phenotypes$cluster),
                                       multiple_donors = FALSE)
 
-chapuy_decon_norm <- Calculate_pvalue(nrep = 1000, ncores = 10, bulk_data = chapuy,
-                                      bulk_meta = chapuy_meta, sc_data = qc_senescence_norm$sc.eset.qc,
-                                      cell_types = c("PS", "ADR", "ADR_OHT"),
-                                      ensemble = FALSE, multiple_donors = FALSE)
+
+mouse_decon_norm <- Calculate_pvalue(nrep = 1000, ncores = 10, bulk_data = mouse,
+                                     bulk_meta = mouse_meta, sc_data = qc_senescence_norm$sc.eset.qc,
+                                     cell_types = unique(phenotypes$cluster),
+                                     ensemble = FALSE, multiple_donors = FALSE)
+
+## ADR_OHT_ki67_low is completely 1, always
