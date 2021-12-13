@@ -26,68 +26,95 @@ qc_senescence <- Quality_control(sc_data = senescence, sc_meta = phenotypes,
 
 ## 2) Import Chapuy DLBCL bulk RNA-seq data (~/SeneSys/Chapuy_Enrichment/chapuy_cohorts_expr.gct)
 ## Meta data in ~/SeneSys/Chapuy_Enrichment/41591_2018_16_MOESM3_ESM.xlsx
+Chapuy_88_processed <- readRDS("~/SeneSys/Survival_SeneSys/Data/Chapuy_88_processed.RDS")
+Chapuy_series_matrix <- readtext(file ="~/SeneSys/Chapuy_Enrichment/GSE98588_series_matrix.txt")
+Chapuy_series_matrix_split <- strsplit(substr(Chapuy_series_matrix$text, 1, 8000), split = "!")
+chapuy_sample_title <- Chapuy_series_matrix_split[[1]][32]
+chapuy_sample_geo_accession <- Chapuy_series_matrix_split[[1]][33]
 
-# Chapuy_88_processed <- readRDS("~/SeneSys/Survival_SeneSys/Data/Chapuy_88_processed.RDS")
-# Chapuy_series_matrix <- readtext(file ="~/SeneSys/Chapuy_Enrichment/GSE98588_series_matrix.txt")
-# Chapuy_series_matrix_split <- strsplit(substr(Chapuy_series_matrix$text, 1, 8000), split = "!")
-# chapuy_sample_title <- Chapuy_series_matrix_split[[1]][32]
-# chapuy_sample_geo_accession <- Chapuy_series_matrix_split[[1]][33]
-# 
-# chapuy_sample_title <- strsplit(chapuy_sample_title, split = "\t")[[1]][-1]
-# chapuy_sample_title <- unname(sapply(chapuy_sample_title, function(x) strsplit(x, split = "\"")[[1]][2]))
-# 
-# chapuy_sample_geo_accession <- strsplit(chapuy_sample_geo_accession, split = "\t")[[1]][-1]
-# chapuy_sample_geo_accession <- unname(sapply(chapuy_sample_geo_accession, function(x) strsplit(x, split = "\"")[[1]][2]))
-# 
-# chapuy_meta <- read_excel(path = "~/SeneSys/Chapuy_Enrichment/41591_2018_16_MOESM3_ESM.xlsx", skip = 1, col_names = TRUE)
-# chapuy_meta$individual_id <- gsub("-", "_", chapuy_meta$individual_id)
-# chapuy_meta$individual_id <- toupper(chapuy_meta$individual_id)
-# chapuy_meta$pair_id <- gsub("-", "_", chapuy_meta$pair_id)
-# chapuy_meta$pair_id <- toupper(chapuy_meta$pair_id)
-# chapuy_meta$individual_id[which(chapuy_meta$pair_id %in% chapuy_sample_title)] <- chapuy_meta$pair_id[which(chapuy_meta$pair_id %in% chapuy_sample_title)]
-# 
-# chapuy_meta <- chapuy_meta[match(chapuy_sample_title, chapuy_meta$individual_id) ,]
-# all(chapuy_meta$individual_id == chapuy_sample_title)
-# unclassified <- which(chapuy_meta$COO_byGEP == "Unclassified")
-# chapuy_meta <- chapuy_meta[-unclassified,]
-# chapuy_sample_geo_accession <- chapuy_sample_geo_accession[-unclassified]
-# chapuy_sample_title <- chapuy_sample_title[-unclassified]
-# Chapuy_88_processed <- Chapuy_88_processed[, -unclassified]
-# all(colnames(Chapuy_88_processed) == chapuy_sample_geo_accession)
-# colnames(Chapuy_88_processed) <- chapuy_sample_title
-# Chapuy_88_processed_gct <- cbind(rownames(Chapuy_88_processed), rep(NA, nrow(Chapuy_88_processed)), Chapuy_88_processed)
-# colnames(Chapuy_88_processed_gct) <- c("Name", "Description", colnames(Chapuy_88_processed))
-# 
-# #chapuy <- read.table("~/SeneSys/Chapuy_Enrichment/chapuy_cohorts_expr.gct", header = TRUE, row.names = 1,
-# #                     sep = "\t")
-# chapuy <- Chapuy_88_processed_gct[,-c(1,2)]
-# #chapuy_meta <- read_excel(path = "~/SeneSys/Chapuy_Enrichment/41591_2018_16_MOESM3_ESM.xlsx", 
-# #                          skip = 1, col_names = TRUE)
-# rownames(chapuy_meta) <- chapuy_meta$individual_id
-# all(colnames(chapuy) == rownames(chapuy_meta))
-# 
+chapuy_sample_title <- strsplit(chapuy_sample_title, split = "\t")[[1]][-1]
+chapuy_sample_title <- unname(sapply(chapuy_sample_title, function(x) strsplit(x, split = "\"")[[1]][2]))
+
+chapuy_sample_geo_accession <- strsplit(chapuy_sample_geo_accession, split = "\t")[[1]][-1]
+chapuy_sample_geo_accession <- unname(sapply(chapuy_sample_geo_accession, function(x) strsplit(x, split = "\"")[[1]][2]))
+
+chapuy_meta <- read_excel(path = "~/SeneSys/Chapuy_Enrichment/41591_2018_16_MOESM3_ESM.xlsx", skip = 1, col_names = TRUE)
+chapuy_meta$individual_id <- gsub("-", "_", chapuy_meta$individual_id)
+chapuy_meta$individual_id <- toupper(chapuy_meta$individual_id)
+chapuy_meta$pair_id <- gsub("-", "_", chapuy_meta$pair_id)
+chapuy_meta$pair_id <- toupper(chapuy_meta$pair_id)
+chapuy_meta$individual_id[which(chapuy_meta$pair_id %in% chapuy_sample_title)] <- chapuy_meta$pair_id[which(chapuy_meta$pair_id %in% chapuy_sample_title)]
+
+chapuy_meta <- chapuy_meta[match(chapuy_sample_title, chapuy_meta$individual_id) ,]
+all(chapuy_meta$individual_id == chapuy_sample_title)
+#unclassified <- which(chapuy_meta$COO_byGEP == "Unclassified")
+#chapuy_meta <- chapuy_meta[-unclassified,]
+#chapuy_sample_geo_accession <- chapuy_sample_geo_accession[-unclassified]
+#chapuy_sample_title <- chapuy_sample_title[-unclassified]
+#Chapuy_88_processed <- Chapuy_88_processed[, -unclassified]
+all(colnames(Chapuy_88_processed) == chapuy_sample_geo_accession)
+colnames(Chapuy_88_processed) <- chapuy_sample_title
+#Chapuy_88_processed_gct <- cbind(rownames(Chapuy_88_processed), rep(NA, nrow(Chapuy_88_processed)), Chapuy_88_processed)
+#colnames(Chapuy_88_processed_gct) <- c("Name", "Description", colnames(Chapuy_88_processed))
+
+#chapuy <- read.table("~/SeneSys/Chapuy_Enrichment/chapuy_cohorts_expr.gct", header = TRUE, row.names = 1,
+#                     sep = "\t")
+#chapuy <- Chapuy_88_processed_gct[,-c(1,2)]
+#chapuy_meta <- read_excel(path = "~/SeneSys/Chapuy_Enrichment/41591_2018_16_MOESM3_ESM.xlsx",
+#                          skip = 1, col_names = TRUE)
+all(colnames(Chapuy_88_processed) == chapuy_meta$individual_id) #rownames(chapuy_meta))
+rownames(chapuy_meta) <- chapuy_meta$individual_id
+all(colnames(Chapuy_88_processed) == rownames(chapuy_meta))
+chapuy <- Chapuy_88_processed
+
+
 ## 3) Import Mouse DLBCL bulk RNA-seq data
 mouse <- read.table("~/SeneSys/Mouse_data/Data_9461.Counts.HGNC.tsv", header = TRUE, row.names = 1, sep = "\t")
 mouse_meta <- read.table("~/SeneSys/Mouse_data/Data_9461.Phenotypes.tsv", header = TRUE, row.names = 1, sep = "\t")
-# 
-# ## 4) Perform Calculate_pvalue on the data
-# chapuy_meta <- as.data.frame(chapuy_meta)
-# chapuy <- apply(chapuy, MARGIN = c(1,2), FUN = as.numeric)
-# 
-# chapuy_decon <- Calculate_pvalue(nrep = 1000, ncores = 10, bulk_data = chapuy,
-#                                  bulk_meta = chapuy_meta, sc_data = qc_senescence$sc.eset.qc,
-#                                  cell_types = c("PS", "ADR", "ADR_OHT"),
-#                                  ensemble = FALSE, multiple_donors = FALSE)
 
 
-mouse_decon <- Calculate_pvalue(nrep = 1000, ncores = 10, bulk_data = mouse,
+## 3.1) Import Schmitz bulk data RNA-seq data
+schmitz <- read.table("~/SeneSys/Chapuy_Enrichment/schmitz_cohorts_expr.gct", header = TRUE, row.names = 1, sep = "\t")
+schmitz <- schmitz[,-1]
+schmitz_meta <- read.table("~/SeneSys/Chapuy_Enrichment/schmitz_cohorts.cls", header = TRUE, sep = " ")
+schmitz_meta <- t(schmitz_meta)
+rownames(schmitz_meta) <- colnames(schmitz)
+colnames(schmitz_meta) <- "subtype"
+
+
+## 4) Perform Calculate_pvalue on the data
+#chapuy_meta <- as.data.frame(chapuy_meta)
+chapuy <- apply(chapuy, MARGIN = c(1,2), FUN = as.numeric)
+
+chapuy_decon <- Calculate_pvalue(nrep = 2000, ncores = 15, bulk_data = chapuy,
+                                 bulk_meta = chapuy_meta, sc_data = qc_senescence$sc.eset.qc,
+                                 cell_types = unique(qc_senescence$sc.eset.qc$cluster),
+                                 ensemble = FALSE, multiple_donors = FALSE)
+
+
+mouse_decon <- Calculate_pvalue(nrep = 2000, ncores = 15, bulk_data = mouse,
                                 bulk_meta = mouse_meta, sc_data = qc_senescence$sc.eset.qc,
-                                cell_types = unique(phenotypes$cluster),
+                                cell_types = unique(qc_senescence$sc.eset.qc$cluster),
                                 ensemble = FALSE, multiple_donors = FALSE)
 pheatmap(mouse_decon$decon_res$prop.est.mvw, 
          annotation_row = as.data.frame(mouse_meta$ResponseCode, 
                                         row.names = rownames(mouse_meta)), 
          show_rownames = FALSE)
+
+
+schmitz_decon <- Calculate_pvalue(nrep = 2000, ncores = 15, bulk_data = schmitz,
+                                  bulk_meta = schmitz_meta, sc_data = qc_senescence$sc.eset.qc,
+                                  cell_types = unique(qc_senescence$sc.eset.qc$cluster),
+                                  ensemble = FALSE, multiple_donors = FALSE)
+annot_row <- as.data.frame(schmitz_meta[,1], 
+              row.names = rownames(schmitz_meta))
+colnames(annot_row) <- "subtype"
+annot_row$subtype <- factor(annot_row$subtype)
+pheatmap(schmitz_decon$decon_res$prop.est.mvw, 
+         annotation_row = annot_row, 
+         show_rownames = FALSE,
+         cluster_cols = FALSE,
+         annotation_colors = list(subtype  = c(ABC = "red", GCB = "blue", Unclass = "yellow")))
 
 ## ADR_ki67_high is almost completely 1, always
 ## try normalize scRNA-seq data
