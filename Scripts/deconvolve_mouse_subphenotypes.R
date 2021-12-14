@@ -122,22 +122,88 @@ pheatmap(schmitz_decon$decon_res$prop.est.mvw,
 #senescence_norm <- (senescence - colMeans(senescence)) / apply(senescence, MARGIN = 2, FUN = sd)
 # qc doesnt work then for sample 612, 2110
 
-library(edgeR)
-library(limma)
-senescence_norm <- edgeR::DGEList(senescence)
-v = limma::voom(senescence_norm, design = NULL)
-senescence_norm <- v$E
-
-
-qc_senescence_norm <- Quality_control(sc_data = senescence_norm, sc_meta = phenotypes, 
-                                      sc_path = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/qc_senescence_mouse_norm.RDS",
-                                      cell_types = unique(phenotypes$cluster),
-                                      multiple_donors = FALSE)
-
-
-mouse_decon_norm <- Calculate_pvalue(nrep = 1000, ncores = 10, bulk_data = mouse,
-                                     bulk_meta = mouse_meta, sc_data = qc_senescence_norm$sc.eset.qc,
-                                     cell_types = unique(phenotypes$cluster),
-                                     ensemble = FALSE, multiple_donors = FALSE)
+# library(edgeR)
+# library(limma)
+# senescence_norm <- edgeR::DGEList(senescence)
+# v = limma::voom(senescence_norm, design = NULL)
+# senescence_norm <- v$E
+# 
+# 
+# qc_senescence_norm <- Quality_control(sc_data = senescence_norm, sc_meta = phenotypes, 
+#                                       sc_path = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/qc_senescence_mouse_norm.RDS",
+#                                       cell_types = unique(phenotypes$cluster),
+#                                       multiple_donors = FALSE)
+# 
+# 
+# mouse_decon_norm <- Calculate_pvalue(nrep = 1000, ncores = 10, bulk_data = mouse,
+#                                      bulk_meta = mouse_meta, sc_data = qc_senescence_norm$sc.eset.qc,
+#                                      cell_types = unique(phenotypes$cluster),
+#                                      ensemble = FALSE, multiple_donors = FALSE)
 
 ## ADR_OHT_ki67_low is completely 1, always
+
+
+
+###################
+## create correlation heatmaps of pairwise correlation of expression of genes from ML core gene set
+## annotate with meta information and phenotype proportions high/low
+library(GSA)
+senesys_gmt <- GSA.read.gmt(filename = "~/SeneSys/Chapuy_Enrichment/SeneSys_gene_sets.gmt.tsv")
+names(senesys_gmt$genesets) <- senesys_gmt$geneset.names
+senesys_gmt$genesets <- lapply(senesys_gmt$genesets, function(x) {
+  x <- x[which(x != "")]
+})
+ml_core <- senesys_gmt$genesets$ML_core
+chapuy_marker <- get_marker_genes(chapuy_decon$decon_res)$marker_genes
+schmitz_marker <- get_marker_genes(schmitz_decon$decon_res)$marker_genes
+mouse_marker <- get_marker_genes(mouse_decon$decon_res)$marker_genes
+
+annotation_chapuy <- as.data.frame(chapuy_meta$COO_byGEP, 
+                                   row.names = rownames(chapuy_meta))
+annotation_chapuy <- cbind(annotation_chapuy, chapuy_decon$decon_res$prop.est.mvw)
+colnames(annotation_chapuy)[1] <- "ABC_GCB"
+chapuy_core <- chapuy[which(rownames(chapuy) %in% ml_core),]
+chapuy_corr <- cor(chapuy_core)
+pheatmap(chapuy_corr,
+         show_rownames = FALSE, show_colnames = FALSE,
+         annotation_col = annotation_chapuy[,-c(2,5,6)])
+chapuy_core2 <- chapuy[which(rownames(chapuy) %in% chapuy_marker),]
+chapuy_corr2 <- cor(chapuy_core2)
+chapuy_corr2 <- chapuy_corr2[-98,]
+chapuy_corr2 <- chapuy_corr2[,-98]
+pheatmap(chapuy_corr2,
+         show_rownames = FALSE, show_colnames = FALSE,
+         annotation_col = annotation_chapuy[,-c(2,5,6)])
+
+
+annotation_schmitz <- as.data.frame(schmitz_meta[,1], 
+                                    row.names = rownames(schmitz_meta))
+annotation_schmitz <- cbind(annotation_schmitz, schmitz_decon$decon_res$prop.est.mvw)
+colnames(annotation_schmitz)[1] <- "ABC_GCB"
+schmitz_core <- schmitz[which(rownames(schmitz) %in% ml_core),]
+schmitz_corr <- cor(schmitz_core)
+pheatmap(schmitz_corr,
+         show_rownames = FALSE, show_colnames = FALSE,
+         annotation_col = annotation_schmitz)
+schmitz_core2 <- schmitz[which(rownames(schmitz) %in% schmitz_marker),]
+schmitz_corr2 <- cor(schmitz_core2)
+pheatmap(schmitz_corr2,
+         show_rownames = FALSE, show_colnames = FALSE,
+         annotation_col = annotation_schmitz)
+
+
+annotation_mouse <- as.data.frame(mouse_meta$ResponseCode, 
+                                  row.names = rownames(mouse_meta))
+annotation_mouse <- cbind(annotation_mouse, mouse_decon$decon_res$prop.est.mvw)
+colnames(annotation_mouse)[1] <- "drug_response"
+mouse_core <- mouse[which(rownames(mouse) %in% ml_core),]
+mouse_corr <- cor(mouse_core)
+pheatmap(mouse_corr,
+         show_rownames = FALSE, show_colnames = FALSE,
+         annotation_col = annotation_mouse[,-6])
+mouse_core2 <- mouse[which(rownames(mouse) %in% mouse_marker),]
+mouse_corr2 <- cor(mouse_core2)
+pheatmap(mouse_corr2,
+         show_rownames = FALSE, show_colnames = FALSE,
+         annotation_col = annotation_mouse[,-6])
+                                    
