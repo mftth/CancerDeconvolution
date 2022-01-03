@@ -12,7 +12,7 @@ library(caret)
 library(skimr)
 
 
-train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "scale"){
+train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "scale", classification = TRUE){
   ## descriptive statistics (necessary? kinda)
   skimmed <- skim(trainData)
   
@@ -30,49 +30,63 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
     trainData <- predict(preProcess_method_model, newdata = trainData)
   }
   
+  if(classification){
+    my_metric <- "Accuracy"
+    my_type <- "Classification"
+    my_sampling <- "down"
+  } else{
+    my_metric <- "RMSE"
+    my_type <- "Regression"
+    my_sampling <- NULL
+  }
+  
   ## feature selection
   subsets <- c(1:8)
-  ctrl <- rfeControl(functions = rfFuncs,
+  # creates a control object, i.e. a list of options for specifying the model and method
+  ctrl <- rfeControl(functions = rfFuncs, # rfFuncs = random forest
                      method = "repeatedcv",
                      number = 5,
                      repeats = 10,
                      verbose = FALSE)
   
   message("Performing feature selection ..")
-  rfProfile <- rfe(x = trainData[,-ncol(trainData)], 
+  rfProfile <- rfe(x = trainData[,-ncol(trainData)], # rfe is feature selection algorithm
                    y = trainData$response,
                    sizes = subsets,
                    rfeControl = ctrl,
-                   metric = "Accuracy",)
+                   metric = my_metric)
   
   fitControl <- trainControl(
     method = "repeatedcv",
     number = 5,
     repeats = 10,
-    sampling = "down", # not specified for regression
+    sampling = my_sampling,
     savePred = TRUE
   )
   
   ## train RF model on all features
-  message("Training a model on all features")
+  message("Training a model on all features ..")
   model_rf <- train(x = trainData[, - ncol(trainData)], 
                     y = trainData$response, 
                     method = 'rf', 
-                    metric = "Accuracy", # RMSE for regression
+                    metric = my_metric,
                     trControl = fitControl, 
-                    type = "Classification",
+                    type = my_type,
                     ntree = 500)
   varimp_rf <- varImp(model_rf)
   
   ## train on RF model selected features
-  trainData_sel <- trainData[, predictors(rfProfile)[1:5]]
-  message("Training a model on selected features")
+  if(length(predictors(rfProfile)) == length(trainData[, - ncol(trainData)])){
+    predictors_sel <- predictors(rfProfile)[1:5]
+  }
+  trainData_sel <- trainData[, predictors_sel]
+  message("Training a model on selected features ..")
   model_rf_sel <- train(x = trainData_sel, 
                         y = trainData$response, 
                         method = 'rf', 
-                        metric = "Accuracy",
+                        metric = my_metric,
                         trControl = fitControl, 
-                        type = "Classification",
+                        type = my_type,
                         ntree = 500)
   varimp_rf_sel <- varImp(model_rf_sel)
   
@@ -82,7 +96,8 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
 }
 
 
-test_ML_model <- function(train_output, testData, true_labels,  preprocess = FALSE, preprocess_method = "scale"){ ## test data, aka hold out set
+test_ML_model <- function(train_output, testData, truth_vec,  preprocess = FALSE, preprocess_method = "scale",
+                          classification = TRUE){ ## test data, aka hold out set
   ## descriptive statistics
   skimmed <- skim(testData)
   
@@ -103,11 +118,17 @@ test_ML_model <- function(train_output, testData, true_labels,  preprocess = FAL
   message("Applying models to test data ..")
   predicted_whole <- predict(train_output$rf_model_whole, testData)
   predicted_sel <- predict(train_output$rf_model_sel, testData)
-  con_mat_whole <- caret::confusionMatrix(data = predicted_whole, reference = true_labels, mode = "everything")
-  con_mat_sel <- caret::confusionMatrix(data = predicted_sel, reference = true_labels, mode = "everything")
   
-  test_output <- list("predicted_whole" = predicted_whole, "con_mat_whole" = con_mat_whole,
-                      "predicted_sel" = predicted_sel, "con_mat_sel" = con_mat_sel)
+  if(classification){
+    evaluation_whole <- caret::confusionMatrix(data = predicted_whole, reference = truth_vec, mode = "everything")
+    evaluation_sel <- caret::confusionMatrix(data = predicted_sel, reference = truth_vec, mode = "everything")
+  } else {
+    evaluation_whole <- postResample(pred = predicted_whole, obs = truth_vec)
+    evaluation_sel <- postResample(pred = predicted_sel, obs = truth_vec)  
+  }
+  
+  test_output <- list("predicted_whole" = predicted_whole, "evaluation_whole" = evaluation_whole,
+                      "predicted_sel" = predicted_sel, "evaluation_sel" = evaluation_sel)
   return(test_output)
 }
 

@@ -5,12 +5,13 @@
 ## 3) cell type proportions plots (as heatmap or bar plots)
 ## 4) heatmap correlation plots of marker genes annotated with cell type proportions and clinical characteristics
 ## 5) ROC curve with AUC of ML analysis
-## 6) accuracy, sensitivity, specificty
+## 6) accuracy, sensitivity, specificity
 
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 library(ggplot2)
 library(reshape2)
 library(pheatmap)
+library(pROC)
 
 ## 3)
 heatmap_proportions <- function(decon_output, bulk_annotation, ...){
@@ -34,6 +35,7 @@ barplot_proportions <- function(decon_output, bulk_annotation_vec){
   
   return(barplot_proportions)
 }
+
 
 ## 4)
 heatmap_corr_genes <- function(decon_output = NULL, bulk_data, bulk_annotation, 
@@ -63,4 +65,13 @@ heatmap_corr_genes <- function(decon_output = NULL, bulk_data, bulk_annotation,
                                  annotation_col = annotation_df, ...)
   
   return(heatmap_corr_genes)
+}
+
+
+## 5)
+roc_curve <- function(labels, predictions, levels, ...){
+  roc_obj <- roc(labels, ordered(predictions, levels = levels))
+  roc_curve_plot <- plot.roc(roc_obj, print.auc = TRUE, ...)
+  
+  return(roc_curve_plot)
 }

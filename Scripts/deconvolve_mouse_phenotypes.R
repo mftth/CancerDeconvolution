@@ -148,7 +148,7 @@ chapuy_reduced <- chapuy[,-98]
 chapuy_meta_reduced <- chapuy_meta[-98,]
 rownames(chapuy_meta_reduced) <- rownames(chapuy_meta)[-98]
 all(colnames(chapuy_reduced) == rownames(chapuy_meta_reduced))
-annotation_chapuy <- as.data.frame(chapuy_meta_reduced$COO_byGEP, 
+annotation_chapuy <- as.data.frame(chapuy_meta_reduced$COO_byGEP, # "ABC_GCB" = 
                                    row.names = rownames(chapuy_meta_reduced))
 colnames(annotation_chapuy) <- "ABC_GCB"
 chapuy_decon_reduced <- chapuy_decon

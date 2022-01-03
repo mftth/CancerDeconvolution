@@ -8,7 +8,7 @@ source("~/SCDC/SCDC/R/Basic_Functions.R")
 source("~/SCDC/SCDC/R/Deconvolution.R")
 
 
-prepare_decon_res <- function(p_value, decon_res, clinical_char, observed_statistics){
+prepare_decon_res <- function(p_value, decon_res, clinical_char, observed_statistics = NULL){
   # p_value : boolean. True, if p-value was estimated; False, if p-value was not estimated
   # observed_statistics : output of get_test_statistics_vec. only necessary, if p-value = FALSE 
   if (p_value){
