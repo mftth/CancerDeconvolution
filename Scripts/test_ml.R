@@ -46,7 +46,8 @@ train_output <- train_ML_model(trainData = trainData, preprocess = TRUE)
 #predictors(rfProfile)
 #plot(varimp_rf)
 #plot(varimp_rf_sel)
-test_output <- test_ML_model(train_output = train_output, testData = testData[, -ncol(testData)], true_labels = testData$response, preprocess = TRUE)
+test_output <- test_ML_model(train_output = train_output, testData = testData[, -ncol(testData)], 
+                             true_labels = testData$response, preprocess = TRUE)
 
 
 

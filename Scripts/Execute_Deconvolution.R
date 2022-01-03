@@ -8,7 +8,9 @@ source("~/SCDC/SCDC/R/Basic_Functions.R")
 source("~/SCDC/SCDC/R/Deconvolution.R")
 
 
-prepare_decon_res <- function(decon_res, clinical_char, p_value){
+prepare_decon_res <- function(p_value, decon_res, clinical_char, observed_statistics){
+  # p_value : boolean. True, if p-value was estimated; False, if p-value was not estimated
+  # observed_statistics : output of get_test_statistics_vec. only necessary, if p-value = FALSE 
   if (p_value){
     decon_res_prepped <- as.data.frame(cbind(decon_res$decon_res$prop.est.mvw, decon_res$statistics_observed$pearson_vec, 
                                              decon_res$statistics_observed$spearman_vec, decon_res$statistics_observed$mad_vec,
@@ -19,9 +21,9 @@ prepare_decon_res <- function(decon_res, clinical_char, p_value){
                                                                                function(x) as.numeric(decon_res_prepped[,x]))
     decon_res_prepped$response <- as.factor(decon_res_prepped$response)
   } else {
-    decon_res_prepped <- as.data.frame(cbind(decon_res$decon_res$prop.est.mvw, decon_res$statistics_observed$pearson_vec, 
-                                             decon_res$statistics_observed$spearman_vec, decon_res$statistics_observed$mad_vec,
-                                             decon_res$statistics_observed$rmsd_vec, clinical_char))
+    decon_res_prepped <- as.data.frame(cbind(decon_res$prop.est.mvw, observed_statistics$pearson_vec, 
+                                             observed_statistics$spearman_vec, observed_statistics$mad_vec,
+                                             observed_statistics$rmsd_vec, clinical_char))
     colnames(decon_res_prepped) <- c(colnames(decon_res$prop.est.mvw), "pearson", "spearman", "mad", "rmsd", "response")
     decon_res_prepped[,1:(ncol(decon_res$prop.est.mvw)+4)] <- sapply(1:(ncol(decon_res$prop.est.mvw)+4), 
                                                                      function(x) as.numeric(decon_res_prepped[,x]))

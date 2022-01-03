@@ -2,6 +2,10 @@
 ## compute power set of a set of cell types
 ## perform deconvolution for each subset of cell types
 ## observe differences in p-value and performance
+## ct_combi_list: set of cell type combinations
+## sub_ct_set: set of cell types, of which power set is computed. 
+## For each suitable subset deconvolution is performed
+## ct_set: set of cell types, which should be added to each subset of sub_ct_set for deconvolution
 
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 
@@ -18,6 +22,8 @@ ablation_study <- function(ct_combi_list = NULL, ct_set = NULL, sub_ct_set = NUL
   
   if (is.null(ct_combi_list) && is.null(ct_set) && is.null(sub_ct_set)){
     stop("Either provide a set of cell types to be investigated or the combinations of cell types of interest!")
+  } else if (!is.null(ct_combi_list) && !is.null(sub_ct_set)){
+    stop("Either provide a set of cell types to be investigated or the combinations of cell types of interest!")
   }
   
   if (!is.null(ct_combi_list)){
@@ -28,8 +34,9 @@ ablation_study <- function(ct_combi_list = NULL, ct_set = NULL, sub_ct_set = NUL
     power_ct_set <- rje::powerSet(sub_ct_set)
     
     if (is.null(ct_set)){
-      cts <- power_ct_set[-1]
+      cts <- power_ct_set[!(lapply(power_ct_set, function(x) length(x)) < 2)]
     } else {
+      cts <- power_ct_set[-1]
       cts <- lapply(power_ct_set, function(x) c(ct_set, x))
     }
   }

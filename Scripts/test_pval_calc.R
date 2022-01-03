@@ -7,7 +7,7 @@
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 
 
-library(SCDC)
+#library(SCDC)
 library(parallel)
 library(robustbase)
 
@@ -63,7 +63,7 @@ qc_segerstolpe <- readRDS(scpath3)
 pseudo_bulk <- generateBulk_allcells(qc_segerstolpe$sc.eset.qc, ct.varname = "cluster", sample = "sample", 
                                      ct.sub = cts)
 pseudo_bulk_rand <- generateBulk_norep(qc_segerstolpe$sc.eset.qc, ct.varname = "cluster", sample = "sample", 
-                                       ct.sub = cts, nbulk = 10)
+                                       ct.sub = cts, nbulk = 50)
 
 decon_pval_pseudo <- Calculate_pvalue(nrep = reps, bulk_data = pseudo_bulk$pseudo_eset@assayData$exprs, 
                                       sc_data = qc_baron$sc.eset.qc, bulk_meta = pseudo_bulk$pseudo_eset@phenoData@data,
