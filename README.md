@@ -1,4 +1,4 @@
 # CancerDeconvolution
-Training of a Machine Learning model based on transcriptional deconvolution for clinical classification of common cancers
+Clinical classification of common cancers by means of deconvolution-based machine learning
 
 Master thesis
