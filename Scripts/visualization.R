@@ -12,8 +12,9 @@ library(ggplot2)
 library(reshape2)
 library(pheatmap)
 library(pROC)
+library(ggpubr)
 
-## 3)
+## 3) cell type proportions plots (as heatmap or bar plots)
 heatmap_proportions <- function(decon_output, bulk_annotation, ...){
   heatmap_proportions <- pheatmap(decon_output$decon_res$prop.est.mvw,
                                   annotation_row = bulk_annotation,
@@ -37,7 +38,7 @@ barplot_proportions <- function(decon_output, bulk_annotation_vec){
 }
 
 
-## 4)
+## 4) heatmap correlation plots of marker genes annotated with cell type proportions and clinical characteristics
 heatmap_corr_genes <- function(decon_output = NULL, bulk_data, bulk_annotation, 
                                marker_genes = NULL, colnames = FALSE, ...){
   # decon_output has to be given if there are no marker genes. Otherwise it is not required
@@ -68,10 +69,61 @@ heatmap_corr_genes <- function(decon_output = NULL, bulk_data, bulk_annotation,
 }
 
 
-## 5)
+## 5) ROC curve with AUC of ML analysis
+## only for classification
 roc_curve <- function(labels, predictions, levels, ...){
   roc_obj <- roc(labels, ordered(predictions, levels = levels))
   roc_curve_plot <- plot.roc(roc_obj, print.auc = TRUE, ...)
   
   return(roc_curve_plot)
 }
+
+
+## 6) accuracy, sensitivity, specificity
+## only for classification
+## visualize these three metrics for each model
+## models are given in a named list
+barplot_ML_evaluation <- function(model_evaluation_list){
+  if(is.null(names(model_evaluation_list))){
+    names(model_evaluation_list) <- sapply(1:length(model_evaluation_list), 
+                                           function(x) paste0("model", x, collapse = ""))
+  }
+  
+  eval_table_list <- lapply(model_evaluation_list, function(x) x$byClass)
+  # create data frame ready for ggplot2
+  for (idx in 1:length(eval_table_list)) {
+    eval_table_list[[idx]] <- as.data.frame(eval_table_list[[idx]])
+    eval_table_list[[idx]]$Model <- names(eval_table_list)[idx]
+    eval_table_list[[idx]]$Class <- sapply(strsplit(rownames(eval_table_list[[idx]]), split = "Class: "), 
+                                           function(x) x[2])
+    rownames(eval_table_list[[idx]]) <- NULL
+  }
+  eval_table <- as.data.frame(Reduce(rbind, eval_table_list))
+  colnames(eval_table) <- gsub(" ", "_", colnames(eval_table))
+  
+  barplot_acc <- ggplot(data = eval_table, aes(x=Class, y=Balanced_Accuracy, fill=Model)) + 
+    geom_bar(stat = "identity", position = "dodge") + 
+    #ggtitle("Accuracy") + 
+    ylab("Accuracy") + 
+    ylim(0,1) +
+    theme(axis.title.x = element_blank(), plot.title = element_text(hjust = 0.5))
+  
+  barplot_sens <- ggplot(data = eval_table, aes(x=Class, y=Sensitivity, fill=Model)) + 
+    geom_bar(stat = "identity", position = "dodge") + 
+    #ggtitle("Sensitivity") + 
+    ylab("Sensitivity") + 
+    ylim(0,1) +
+    theme(axis.title.x = element_blank(), plot.title = element_text(hjust = 0.5))
+  
+  barplot_spec <- ggplot(data = eval_table, aes(x=Class, y=Specificity, fill=Model)) + 
+    geom_bar(stat = "identity", position = "dodge") + 
+    #ggtitle("Specificity") + 
+    ylab("Specificity") + 
+    ylim(0,1) +
+    theme(axis.title.x = element_blank(), plot.title = element_text(hjust = 0.5))
+  
+  barplot_ML_eval <- ggarrange(barplot_acc, barplot_sens, barplot_spec, nrow = 1, common.legend = T)
+  
+  return(barplot_ML_eval)
+}
+

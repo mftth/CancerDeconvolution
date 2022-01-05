@@ -77,21 +77,21 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
   
   ## train on RF model selected features
   if(length(predictors(rfProfile)) == length(trainData[, - ncol(trainData)])){
-    predictors_sel <- predictors(rfProfile)[1:5]
+    predictors_red <- predictors(rfProfile)[1:5]
   }
-  trainData_sel <- trainData[, predictors_sel]
+  trainData_red <- trainData[, predictors_red]
   message("Training a model on selected features ..")
-  model_rf_sel <- train(x = trainData_sel, 
+  model_rf_red <- train(x = trainData_red, 
                         y = trainData$response, 
                         method = 'rf', 
                         metric = my_metric,
                         trControl = fitControl, 
                         type = my_type,
                         ntree = 500)
-  varimp_rf_sel <- varImp(model_rf_sel)
+  varimp_rf_red <- varImp(model_rf_red)
   
-  train_output <- list("rf_model_whole" = model_rf, "rf_model_sel" = model_rf_sel, 
-                       "varimp_whole" = varimp_rf, "varimp_sel" = varimp_rf_sel)
+  train_output <- list("rf_model_whole" = model_rf, "rf_model_reduced" = model_rf_red, 
+                       "varimp_whole" = varimp_rf, "varimp_reduced" = varimp_rf_red)
   return(train_output)
 }
 
@@ -117,18 +117,18 @@ test_ML_model <- function(train_output, testData, truth_vec,  preprocess = FALSE
   
   message("Applying models to test data ..")
   predicted_whole <- predict(train_output$rf_model_whole, testData)
-  predicted_sel <- predict(train_output$rf_model_sel, testData)
+  predicted_red <- predict(train_output$rf_model_reduced, testData)
   
   if(classification){
     evaluation_whole <- caret::confusionMatrix(data = predicted_whole, reference = truth_vec, mode = "everything")
-    evaluation_sel <- caret::confusionMatrix(data = predicted_sel, reference = truth_vec, mode = "everything")
+    evaluation_red <- caret::confusionMatrix(data = predicted_red, reference = truth_vec, mode = "everything")
   } else {
     evaluation_whole <- postResample(pred = predicted_whole, obs = truth_vec)
-    evaluation_sel <- postResample(pred = predicted_sel, obs = truth_vec)  
+    evaluation_red <- postResample(pred = predicted_red, obs = truth_vec)  
   }
   
   test_output <- list("predicted_whole" = predicted_whole, "evaluation_whole" = evaluation_whole,
-                      "predicted_sel" = predicted_sel, "evaluation_sel" = evaluation_sel)
+                      "predicted_reduced" = predicted_red, "evaluation_reduced" = evaluation_red)
   return(test_output)
 }
 
