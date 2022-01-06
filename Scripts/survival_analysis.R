@@ -5,7 +5,7 @@
 ## just testing cell types of interest
 ## also: visualization using Kaplan-Meier plots
 
-source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
+#source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 library(survival)
 library(survminer)
 library(ggplot2)
@@ -14,31 +14,63 @@ library(ggplot2)
 # angabe über welche spalten der meta data in survival analysis getestet werden soll
 #+ cell type(s) of interest + additional clinical characteristic of interest as a whole 
 
-repset_meta$OS_Tissue <- gsub(",", ".", repset_meta$OS_Tissue)
-repset_meta$OS_Tissue <- as.numeric(repset_meta$OS_Tissue)
-repset_meta$ductal <-  Repset_scdc_baron$decon_res$prop.est.mvw[,"ductal"]
-repset_meta$ductal_high_low <- NA
-repset_meta$ductal_high_low[which(repset_meta$ductal <= mean(repset_meta$ductal))] <- "ductal_low"
-repset_meta$ductal_high_low[which(repset_meta$ductal > mean(repset_meta$ductal))] <- "ductal_high"
-repset_meta$alpha <-  Repset_scdc_baron$decon_res$prop.est.mvw[,"alpha"]
-repset_meta$alpha_high_low <- NA
-repset_meta$alpha_high_low[which(repset_meta$alpha <= mean(repset_meta$alpha))] <- "alpha_low"
-repset_meta$alpha_high_low[which(repset_meta$alpha > mean(repset_meta$alpha))] <- "alpha_high"
+continuous_to_discrete <- function(con_vec, col_name){
+  dis_vec <- rep(NA, length(con_vec))
+  dis_vec[which(con_vec <= median(con_vec))] <- paste0(col_name, "_low", collapse = "")
+  dis_vec[which(con_vec > median(con_vec))] <- paste0(col_name, "_high", collapse = "")
+  return(dis_vec)
+}
 
-
-#km <- with(repset_meta, Surv(OS_Tissue, Zensur))
-#km_fit <- survfit(Surv(OS_Tissue, Zensur) ~ 1, data = repset_meta)
-#plot(km_fit)
-km_fit_ductal <- survfit(Surv(OS_Tissue, Zensur) ~ ductal_high_low, data = repset_meta)
-km_fit_alpha <- survfit(Surv(OS_Tissue, Zensur) ~ alpha_high_low, data = repset_meta)
-#plot(km_fit_ductal)
-surv_ductal <- survminer::surv_pvalue(km_fit_ductal, data = repset_meta)
-surv_ductal$pval
-surv_alpha <- survminer::surv_pvalue(km_fit_alpha, data = repset_meta)
-surv_alpha$pval
-
-survminer::ggsurvplot(km_fit_ductal, data = repset_meta, pval = TRUE)#, 
-#                      xlab = "month", ylab = "survival rate")
-
-survminer::ggsurvplot(list(ductal = km_fit_ductal, alpha = km_fit_alpha), data = repset_meta,
-                      combine = TRUE)
+survival_analysis <- function(decon_output, cell_types = NULL, OS, censor, clinical_characteristics){
+  ## cell_types is vector of cell types of interest (i.e. those investigated in survival analysis)
+  ## OS is numeric, censor integer vector
+  ## visualize only those with p-value < 0.05
+  
+  ct_prop <- decon_output$decon_res$prop.est.mvw
+  if(!is.null(cell_types)){
+    ct_prop <- as.data.frame(ct_prop[,cell_types])
+    colnames(ct_prop) <- cell_types
+  }
+  ## transform numerical cell type proportion into categorical variable
+  ct_prop_categories <- sapply(1:ncol(ct_prop), 
+                               function(x) continuous_to_discrete(ct_prop[,x], colnames(ct_prop)[x]))
+  rownames(ct_prop_categories) <- rownames(ct_prop)
+  colnames(ct_prop_categories) <- sapply(colnames(ct_prop), 
+                                         function(x) paste0(x, "_high_low", collapse = ""))
+  
+  ## transform numerical characteristics into categorical variable
+  num_characteristics <- which(sapply(1:ncol(clinical_characteristics), 
+                                      function(x) class(clinical_characteristics[,x])) == "numeric")
+  clinical_characteristics_cat <- clinical_characteristics
+  for (idx in num_characteristics) {
+    name_char <- colnames(clinical_characteristics)[idx]
+    cat_char <- continuous_to_discrete(clinical_characteristics[,idx], name_char)
+    clinical_characteristics_cat[, idx] <- cat_char
+  }
+  
+  ## fit survfit object, create survival curve and manipulate formula
+  survival_meta <- as.data.frame(cbind(ct_prop_categories, clinical_characteristics_cat))
+  survival_fit <- lapply(1:ncol(survival_meta), 
+                         function(x) survfit(as.formula(paste0("Surv(OS, censor) ~ ", colnames(survival_meta)[x], 
+                                                               collapse = "")), 
+                                             data = survival_meta))
+  names(survival_fit) <- colnames(survival_meta)
+  for (idx in 1:length(survival_fit)) {
+    survival_fit[[idx]]$call$formula <- as.formula(paste0("Surv(OS, censor) ~ ", colnames(survival_meta)[idx], 
+                                                          collapse = ""))
+  }
+  
+  ## calculate pvalue from survfit object
+  survival_pval <- sapply(survival_fit, 
+                          function(x) survminer::surv_pvalue(x, data = survival_meta)$pval)
+  
+  ## create Kaplan-Meier plots
+  kp_plot <- ggsurvplot(survival_fit, data = survival_meta, combine = TRUE)
+  single_kp_plots <- lapply(survival_fit, 
+                            function(x) ggsurvplot(x, data = survival_meta, pval = TRUE))
+  
+  return(list("survfit_objects" = survival_fit,
+              "survival_pvals" = survival_pval,
+              "combined_kp" = kp_plot,
+              "single_kp" = single_kp_plots))
+}
