@@ -1,6 +1,6 @@
 ## Mastherthesis, Melanie Fattohi
 ## survival analysis 
-## test if relevant cell type proportions are predictive in regards to disease-related survival
+## test if relevant cell type proportions are predictive in regards to disease-related survival;
 ## relevant cell types are determined through Machine Learning (feature importance) or otherwise
 ## just testing cell types of interest
 ## also: visualization using Kaplan-Meier plots
@@ -26,6 +26,11 @@ survival_analysis <- function(decon_output, cell_types = NULL, OS, censor, clini
   ## OS is numeric, censor integer vector
   ## visualize only those with p-value < 0.05
   
+  if(!is.data.frame(clinical_characteristics)){
+    #clinical_characteristics <- as.data.frame(clinical_characteristics)
+    stop("clinical_characteristics has to be of type data.frame")
+  }
+  
   ct_prop <- decon_output$decon_res$prop.est.mvw
   if(!is.null(cell_types)){
     ct_prop <- as.data.frame(ct_prop[,cell_types])
@@ -41,13 +46,16 @@ survival_analysis <- function(decon_output, cell_types = NULL, OS, censor, clini
   ## transform numerical characteristics into categorical variable
   num_characteristics <- which(sapply(1:ncol(clinical_characteristics), 
                                       function(x) class(clinical_characteristics[,x])) == "numeric")
-  clinical_characteristics_cat <- clinical_characteristics
-  for (idx in num_characteristics) {
-    name_char <- colnames(clinical_characteristics)[idx]
-    cat_char <- continuous_to_discrete(clinical_characteristics[,idx], name_char)
-    clinical_characteristics_cat[, idx] <- cat_char
+  if(length(num_characteristics)==0){
+    clinical_characteristics_cat <- clinical_characteristics
+  } else {
+    clinical_characteristics_cat <- clinical_characteristics
+    for (idx in num_characteristics) {
+      name_char <- colnames(clinical_characteristics)[idx]
+      cat_char <- continuous_to_discrete(clinical_characteristics[,idx], name_char)
+      clinical_characteristics_cat[, idx] <- cat_char
+    }
   }
-  
   ## fit survfit object, create survival curve and manipulate formula
   survival_meta <- as.data.frame(cbind(ct_prop_categories, clinical_characteristics_cat))
   survival_fit <- lapply(1:ncol(survival_meta), 

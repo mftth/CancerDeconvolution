@@ -1,7 +1,7 @@
 ## Mastherthesis, Melanie Fattohi
 ## generate different plots for visualization of results of analyses
-## 1) survival plots
-## 2) correlations plots (boxplots, heatmaps)
+## 1) survival plots in survival_analysis.R
+## 2) correlations plots (boxplots, heatmaps) in correlation_analysis.R
 ## 3) cell type proportions plots (as heatmap or bar plots)
 ## 4) heatmap correlation plots of marker genes annotated with cell type proportions and clinical characteristics
 ## 5) ROC curve with AUC of ML analysis
