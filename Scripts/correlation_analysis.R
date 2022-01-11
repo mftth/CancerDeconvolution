@@ -3,7 +3,7 @@
 ## test if predicted cell type proportions are correlated with clinically relevant characteristics;
 ## also: visualization using heatmaps and box plots (boxplots for p-values)
 
-factor_to_numeric <-
+#factor_to_numeric <-
 
 
 correlation_analysis <- function(decon_output, cell_types = NULL, clinical_characteristic){
