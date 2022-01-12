@@ -5,14 +5,10 @@
 ## just testing cell types of interest
 ## also: visualization using Kaplan-Meier plots
 
-#source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 library(survival)
 library(survminer)
 library(ggplot2)
 
-## need input meta data 
-# angabe über welche spalten der meta data in survival analysis getestet werden soll
-#+ cell type(s) of interest + additional clinical characteristic of interest as a whole 
 
 continuous_to_discrete <- function(con_vec, col_name){
   dis_vec <- rep(NA, length(con_vec))

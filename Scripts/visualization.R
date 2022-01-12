@@ -15,19 +15,21 @@ library(pROC)
 library(ggpubr)
 
 ## 3) cell type proportions plots (as heatmap or bar plots)
-heatmap_proportions <- function(decon_output, bulk_annotation, ...){
+heatmap_proportions <- function(decon_output, clinical_characteristics = NA, ...){
+  # clinical char is dataframe (one or more)
+  # deconoutput ist output von framework
   heatmap_proportions <- pheatmap(decon_output$decon_res$prop.est.mvw,
-                                  annotation_row = bulk_annotation,
+                                  annotation_row = clinical_characteristics,
                                   show_rownames = FALSE, ...)
   
   return(heatmap_proportions)
 }
 
-barplot_proportions <- function(decon_output, bulk_annotation_vec){
-  # bulk_annotation_vec is a character vector of length = nrow(decon_output$decon_res$prop.est.mvw)
+barplot_proportions <- function(decon_output, clinical_characteristics_vec){
+  # clinical_characteristics_vec is a character vector of length = nrow(decon_output$decon_res$prop.est.mvw)
   decon_res <- decon_output$decon_res$prop.est.mvw
   decon_res_molten <- reshape2::melt(decon_res)
-  decon_res_molten <- cbind(decon_res_molten, rep(bulk_annotation_vec, ncol(decon_res)))
+  decon_res_molten <- cbind(decon_res_molten, rep(clinical_characteristics_vec, ncol(decon_res)))
   colnames(decon_res_molten) <- c("sample", "cell_type", "value", "clinical_characteristic")
   
   barplot_proportions <- ggplot(decon_res_molten, aes(fill = cell_type, y = value, 
@@ -39,10 +41,10 @@ barplot_proportions <- function(decon_output, bulk_annotation_vec){
 
 
 ## 4) heatmap correlation plots of marker genes annotated with cell type proportions and clinical characteristics
-heatmap_corr_genes <- function(decon_output = NULL, bulk_data, bulk_annotation, 
+heatmap_corr_genes <- function(decon_output = NULL, bulk_data, clinical_characteristics, 
                                marker_genes = NULL, colnames = FALSE, ...){
   # decon_output has to be given if there are no marker genes. Otherwise it is not required
-  # bulk_annotation has to be a data frame, having the colnames of bulk_data as rownames
+  # clinical_characteristics has to be a data frame, having the colnames of bulk_data as rownames
   
   if(is.null(marker_genes) && is.null(decon_output)){
     stop("Heatmap can only be generated if marker genes are given or computed from a deconvolution result!")
@@ -53,9 +55,9 @@ heatmap_corr_genes <- function(decon_output = NULL, bulk_data, bulk_annotation,
   }
   
   if(!is.null(decon_output)){
-    annotation_df <- cbind(bulk_annotation, decon_output$decon_res$prop.est.mvw)
+    annotation_df <- cbind(clinical_characteristics, decon_output$decon_res$prop.est.mvw)
   } else {
-    annotation_df <- bulk_annotation
+    annotation_df <- clinical_characteristics
   }
   
   bulk_marker <- bulk_data[which(rownames(bulk_data) %in% marker_genes),]
