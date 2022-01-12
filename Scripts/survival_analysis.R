@@ -42,16 +42,21 @@ survival_analysis <- function(decon_output, cell_types = NULL, OS, censor, clini
   ## transform numerical characteristics into categorical variable
   num_characteristics <- which(sapply(1:ncol(clinical_characteristics), 
                                       function(x) class(clinical_characteristics[,x])) == "numeric")
+  
+  
   if(length(num_characteristics)==0){
     clinical_characteristics_cat <- clinical_characteristics
   } else {
-    clinical_characteristics_cat <- clinical_characteristics
-    for (idx in num_characteristics) {
-      name_char <- colnames(clinical_characteristics)[idx]
-      cat_char <- continuous_to_discrete(clinical_characteristics[,idx], name_char)
-      clinical_characteristics_cat[, idx] <- cat_char
-    }
+    clinical_characteristics_cat <- sapply(num_characteristics, 
+                                           function(x) continuous_to_discrete(clinical_characteristics[,x],
+                                                                              colnames(clinical_characteristics)[x]))
+    rownames(clinical_characteristics_cat) <- rownames(clinical_characteristics)
+    colnames(clinical_characteristics_cat) <- sapply(colnames(clinical_characteristics)[num_characteristics], 
+                                                     function(x) paste0(x, "_high_low", collapse = ""))
+    clinical_characteristics_cat <- cbind(clinical_characteristics[,-num_characteristics],
+                                          clinical_characteristics_cat)
   }
+  
   ## fit survfit object, create survival curve and manipulate formula
   survival_meta <- as.data.frame(cbind(ct_prop_categories, clinical_characteristics_cat))
   survival_fit <- lapply(1:ncol(survival_meta), 
