@@ -11,22 +11,24 @@ source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 library(parallel)
 library(robustbase)
 
-set.seed(4)
+set.seed(40)
 
 ## read in real bulk RNA-seq data and set some variables
-repset <- read.table(file = "~/Praktikum/Data/RepSet.S57.tsv", header = TRUE, 
-                     sep = "\t",)
-pannen_meta <- read.table(file = "~/Praktikum/Data/Clinial_data_Meta_information.tsv", 
-                          header = TRUE, sep = "\t")
-scarpa_meta <- pannen_meta[which(pannen_meta$Study == "Scarpa"),]
-riemer_meta <- pannen_meta[which(pannen_meta$Study == "Riemer"),]
-riemer_meta <- riemer_meta[which(riemer_meta$Subtype == "Cancer"),]
-repset_meta <- rbind(scarpa_meta, riemer_meta)
-repset_meta$Name <- as.character(repset_meta$Name)
-repset_meta$Name[1:55] <- paste("X", repset_meta$Name[1:55], sep = "")
-repset_meta <- repset_meta[match(colnames(repset), repset_meta$Name),]
-all(repset_meta$Name == colnames(repset))
-rownames(repset_meta) <- repset_meta$Name
+# repset <- read.table(file = "~/Praktikum/Data/RepSet.S57.tsv", header = TRUE, 
+#                      sep = "\t",)
+# pannen_meta <- read.table(file = "~/Praktikum/Data/Clinial_data_Meta_information.tsv", 
+#                           header = TRUE, sep = "\t")
+# scarpa_meta <- pannen_meta[which(pannen_meta$Study == "Scarpa"),]
+# riemer_meta <- pannen_meta[which(pannen_meta$Study == "Riemer"),]
+# riemer_meta <- riemer_meta[which(riemer_meta$Subtype == "Cancer"),]
+# repset_meta <- rbind(scarpa_meta, riemer_meta)
+# repset_meta$Name <- as.character(repset_meta$Name)
+# repset_meta$Name[1:55] <- paste("X", repset_meta$Name[1:55], sep = "")
+# repset_meta <- repset_meta[match(colnames(repset), repset_meta$Name),]
+# all(repset_meta$Name == colnames(repset))
+# rownames(repset_meta) <- repset_meta$Name
+repset <- readRDS("~/Masterthesis/Data/Bulk/RepSet/repset.RDS")
+repset_meta <- readRDS("~/Masterthesis/Data/Bulk/RepSet/repset_meta.RDS")
 
 cts <- c("alpha", "beta", "gamma", "delta", "acinar", "ductal")
 #scpath1 <- "~/Praktikum/Deko_SCDC/Training_Data/Baron_qc_exo.RDS"

@@ -159,6 +159,7 @@ get_test_statistics_vec <- function(bulk_data, decon_res){
 
 get_marker_genes <- function(decon_res){
   quantiles <- sapply(1:ncol(decon_res$basis.mvw), function(x) quantile(decon_res$basis.mvw[,x], seq(0,1,0.01))[100])
+  ## marker genes are genes with an expression greater than the 99%-quantile of each cell type
   marker_genes_ct <- lapply(1:length(quantiles), function(x) {
     which(decon_res$basis.mvw[,x]>quantiles[x])
   })
