@@ -3,9 +3,7 @@
 ## bulk RNA-seq of common cancers and their meta data (specifically tumor grading)
 ## pancreatic ductal adenocarcinoma (PDAC)
 ## invasive ductal carcinoma (IDC) (breast cancer)
-## adenocarcinoma of the lung (e.g. NSCLC)
-## colorectal adenocarcinoma (CRA)
-## head and neck squamous cell carcinoma (HNSCC)
+## diffuse large B-cell lymphoma (DLBCL)
 
 library(tidyverse)
 library(GEOquery)
@@ -77,3 +75,23 @@ write.table(Yang_metadata_tumor, file = "~/Masterthesis/CancerDeconvolution/Data
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
 saveRDS(Yang_sub_bulk_tumor, file = "~/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_bulk.RDS")
 saveRDS(Yang_metadata_tumor, file = "~/Masterthesis/CancerDeconvolution/Data/Bulk/Yang/Yang_metadata.RDS")
+
+
+## PAAD
+#paad <- read.table("~/Masterthesis/Data/Bulk/PAAD/illuminahiseq_rnaseqv2-RSEM_genes/PAAD.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.data.txt",
+#                   header = TRUE, sep = "\t")
+paad_raw <- read.table("~/Masterthesis/Data/Bulk/PAAD/mRNAseq_Preprocess/PAAD.uncv2.mRNAseq_raw_counts.txt",
+                   header = TRUE, sep = "\t", row.names = 1)
+paad_zscore <- read.table("~/Masterthesis/Data/Bulk/PAAD/mRNAseq_Preprocess/PAAD.uncv2.mRNAseq_RSEM_Z_Score.txt",
+                       header = TRUE, sep = "\t", row.names = 1)
+paad_meta <- read.delim("~/Masterthesis/Data/Bulk/PAAD/Clinical_Pick_Tier1/All_CDEs.txt",
+                        header = TRUE, sep = "\t", row.names = 1)
+paad_meta <- as.data.frame(t(paad_meta))
+rownames(paad_meta) <- toupper(rownames(paad_meta))
+colnames(paad_raw) <- unname(sapply(colnames(paad_raw), function(x) substr(x, 1, nchar(x)-3)))
+
+
+## Guo
+guo <- read.table("~/Masterthesis/Data/Bulk/Guo/GSE172356_PDA_gene_expression_matrix.txt",
+                  header = TRUE, sep = "\t", row.names = 1)
+#guo_meta <- #

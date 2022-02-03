@@ -26,8 +26,8 @@ correlation_analysis <- function(decon_output, cell_types = NULL, clinical_chara
       
   } else if(is.numeric(clinical_characteristic)){
     cor_ct_prop <- as.numeric(cor(ct_prop, clinical_characteristic))
-    cor_ct_prop_pval <- lapply(1:ncol(ct_prop), function(x) cor.test(ct_prop[,x],
-                                                                     clinical_characteristic))#$p.value)
+    cor_ct_prop_pval <- sapply(1:ncol(ct_prop), function(x) cor.test(ct_prop[,x],
+                                                                     clinical_characteristic)$p.value)
     names(cor_ct_prop) <- colnames(ct_prop)
     names(cor_ct_prop_pval) <- colnames(ct_prop)
     return(list("corr" = cor_ct_prop,
