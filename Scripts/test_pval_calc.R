@@ -4,14 +4,14 @@
 ## 2) known/simulated data; expectation: p-value has expected value
 ## 3) real data
 
-source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
+#source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 
 
 #library(SCDC)
-library(parallel)
-library(robustbase)
+#library(parallel)
+#library(robustbase)
 
-set.seed(40)
+#set.seed(40)
 
 ## read in real bulk RNA-seq data and set some variables
 # repset <- read.table(file = "~/Praktikum/Data/RepSet.S57.tsv", header = TRUE, 
@@ -32,9 +32,9 @@ repset_meta <- readRDS("~/Masterthesis/Data/Bulk/RepSet/repset_meta.RDS")
 
 cts <- c("alpha", "beta", "gamma", "delta", "acinar", "ductal")
 #scpath1 <- "~/Praktikum/Deko_SCDC/Training_Data/Baron_qc_exo.RDS"
-scpath2 <- "~/Praktikum/Deko_SCDC/Training_Data/Lawlor_qc_exo.RDS"
+#scpath2 <- "~/Praktikum/Deko_SCDC/Training_Data/Lawlor_qc_exo.RDS"
 scpath3 <- "~/Praktikum/Deko_SCDC/Training_Data/Segerstolpe_qc_exo.RDS"
-reps <- 50
+reps <- 1000
 ncores <- 15
 
 ## perform QC on Baron
@@ -50,13 +50,16 @@ random_bulk <- matrix(runif(nrow(repset)*ncol(repset)), nrow=nrow(repset))
 rownames(random_bulk) <- rownames(repset)
 colnames(random_bulk) <- colnames(repset)
 
-decon_pval_random <- Calculate_pvalue(nrep = reps, ncores = ncores,  bulk_data = random_bulk, sc_data = qc_baron$sc.eset.qc,
+####### old pval calc #######
+source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
+
+decon_pval_random_old <- Calculate_pvalue(nrep = reps, ncores = ncores,  bulk_data = random_bulk, sc_data = qc_baron$sc.eset.qc,
                                       bulk_meta = repset_meta, cell_types = cts, ensemble = FALSE,
                                       multiple_donors = TRUE)
-decon_pval_random$p_value_wy_pearson  
-decon_pval_random$p_value_wy_spearman 
-decon_pval_random$p_value_wy_mad 
-decon_pval_random$p_value_wy_rmsd 
+decon_pval_random_old$p_value_wy_pearson  # new version: 0.01998
+decon_pval_random_old$p_value_wy_spearman # new version: 0.3296
+decon_pval_random_old$p_value_wy_mad # new version: 0.44155
+decon_pval_random_old$p_value_wy_rmsd # new version: 0.013
 #View(decon_pval_random$decon_res$prop.est.mvw)
 
 
@@ -68,28 +71,28 @@ pseudo_bulk <- generateBulk_allcells(qc_segerstolpe$sc.eset.qc, ct.varname = "cl
 pseudo_bulk_rand <- generateBulk_norep(qc_segerstolpe$sc.eset.qc, ct.varname = "cluster", sample = "sample", 
                                        ct.sub = cts, nbulk = 50)
 
-decon_pval_pseudo <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = pseudo_bulk$pseudo_eset@assayData$exprs, 
+decon_pval_pseudo_old <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = pseudo_bulk$pseudo_eset@assayData$exprs, 
                                       sc_data = qc_baron$sc.eset.qc, bulk_meta = pseudo_bulk$pseudo_eset@phenoData@data,
                                       cell_types = cts, ensemble = FALSE, multiple_donors = TRUE)
-decon_pval_pseudo$p_value_wy_pearson  
-decon_pval_pseudo$p_value_wy_spearman 
-decon_pval_pseudo$p_value_wy_mad 
-decon_pval_pseudo$p_value_wy_rmsd 
-SCDC_peval(ptrue = pseudo_bulk$truep, pest = decon_pval_pseudo$decon_res$prop.est.mvw, 
+decon_pval_pseudo_old$p_value_wy_pearson  # new version: 0.00099001
+decon_pval_pseudo_old$p_value_wy_spearman # new version: 0.02797
+decon_pval_pseudo_old$p_value_wy_mad # new version: 0.02297
+decon_pval_pseudo_old$p_value_wy_rmsd # new version: 0.00099001
+SCDC_peval(ptrue = pseudo_bulk$truep, pest = decon_pval_pseudo_old$decon_res$prop.est.mvw, 
            pest.names = "pseudo_bulk")$evals.table
 #               RMSD     mAD      R
 # pseudo_bulk 0.0397 0.02933 0.9669
 # 0.11334 0.08213 0.9292
 
 
-decon_pval_pseudo_rand <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = pseudo_bulk_rand$pseudo_bulk, 
+decon_pval_pseudo_rand_old <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = pseudo_bulk_rand$pseudo_bulk, 
                                            sc_data = qc_baron$sc.eset.qc, bulk_meta = pseudo_bulk_rand$pseudo_eset@phenoData@data,
                                            cell_types = cts, ensemble = FALSE, multiple_donors = TRUE)
-decon_pval_pseudo_rand$p_value_wy_pearson  
-decon_pval_pseudo_rand$p_value_wy_spearman 
-decon_pval_pseudo_rand$p_value_wy_mad 
-decon_pval_pseudo_rand$p_value_wy_rmsd 
-SCDC_peval(ptrue = pseudo_bulk_rand$true_p, pest = decon_pval_pseudo_rand$decon_res$prop.est.mvw, 
+decon_pval_pseudo_rand_old$p_value_wy_pearson  # new version: 0.00099001
+decon_pval_pseudo_rand_old$p_value_wy_spearman # new version: 0.0359
+decon_pval_pseudo_rand_old$p_value_wy_mad # new version: 0.0129
+decon_pval_pseudo_rand_old$p_value_wy_rmsd # new version: 0.00099001
+SCDC_peval(ptrue = pseudo_bulk_rand$true_p, pest = decon_pval_pseudo_rand_old$decon_res$prop.est.mvw, 
            pest.names = "pseudo_bulk_rand")$evals.table
 #                     RMSD     mAD      R
 # pseudo_bulk_rand 0.11276 0.08166 0.9341
@@ -97,11 +100,52 @@ SCDC_peval(ptrue = pseudo_bulk_rand$true_p, pest = decon_pval_pseudo_rand$decon_
 
 
 ## 3) real data
-decon_pval <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = repset, bulk_meta = repset_meta,
+decon_pval_old <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = repset, bulk_meta = repset_meta,
                                cell_types =  cts, sc_data = qc_baron$sc.eset.qc,
                                ensemble = FALSE, multiple_donors = TRUE)
-decon_pval$p_value_wy_pearson  
-decon_pval$p_value_wy_spearman 
-decon_pval$p_value_wy_mad 
-decon_pval$p_value_wy_rmsd 
+decon_pval_old$p_value_wy_pearson  # new version: 0.994
+decon_pval_old$p_value_wy_spearman # new version: 0.005994
+decon_pval_old$p_value_wy_mad # new version: 0.000999001
+decon_pval_old$p_value_wy_rmsd # new version: 0.996
 
+
+
+####### new pval calc #######
+source("~/Masterthesis/test.R")
+
+decon_pval_random_new <- Calculate_pvalue(nrep = reps, ncores = ncores,  bulk_data = random_bulk, sc_data = qc_baron$sc.eset.qc,
+                                          bulk_meta = repset_meta, cell_types = cts, ensemble = FALSE,
+                                          multiple_donors = TRUE)
+decon_pval_random_new$p_value_wy_pearson  # new version: 0.01998
+decon_pval_random_new$p_value_wy_spearman # new version: 0.3296
+decon_pval_random_new$p_value_wy_mad # new version: 0.44155
+decon_pval_random_new$p_value_wy_rmsd # new version: 0.013
+
+
+decon_pval_pseudo_new <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = pseudo_bulk$pseudo_eset@assayData$exprs, 
+                                          sc_data = qc_baron$sc.eset.qc, bulk_meta = pseudo_bulk$pseudo_eset@phenoData@data,
+                                          cell_types = cts, ensemble = FALSE, multiple_donors = TRUE)
+decon_pval_pseudo_new$p_value_wy_pearson  # new version: 0.00099001
+decon_pval_pseudo_new$p_value_wy_spearman # new version: 0.02797
+decon_pval_pseudo_new$p_value_wy_mad # new version: 0.02297
+decon_pval_pseudo_new$p_value_wy_rmsd # new version: 0.00099001
+
+
+decon_pval_pseudo_rand_new <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = pseudo_bulk_rand$pseudo_bulk, 
+                                               sc_data = qc_baron$sc.eset.qc, bulk_meta = pseudo_bulk_rand$pseudo_eset@phenoData@data,
+                                               cell_types = cts, ensemble = FALSE, multiple_donors = TRUE)
+decon_pval_pseudo_rand_new$p_value_wy_pearson  # new version: 0.00099001
+decon_pval_pseudo_rand_new$p_value_wy_spearman # new version: 0.0359
+decon_pval_pseudo_rand_new$p_value_wy_mad # new version: 0.0129
+decon_pval_pseudo_rand_new$p_value_wy_rmsd # new version: 0.00099001
+
+
+decon_pval_new <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = repset, bulk_meta = repset_meta,
+                                   cell_types =  cts, sc_data = qc_baron$sc.eset.qc,
+                                   ensemble = FALSE, multiple_donors = TRUE)
+decon_pval_new$p_value_wy_pearson  # new version: 0.994
+decon_pval_new$p_value_wy_spearman # new version: 0.005994
+decon_pval_new$p_value_wy_mad # new version: 0.000999001
+decon_pval_new$p_value_wy_rmsd # new version: 0.996
+
+save.image("~/Masterthesis/test.RData")

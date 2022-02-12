@@ -8,6 +8,7 @@
 library(tidyverse)
 library(GEOquery)
 library(HelpersMG)
+library(readxl)
 
 #################### PDAC ####################
 
@@ -94,4 +95,43 @@ colnames(paad_raw) <- unname(sapply(colnames(paad_raw), function(x) substr(x, 1,
 ## Guo
 guo <- read.table("~/Masterthesis/Data/Bulk/Guo/GSE172356_PDA_gene_expression_matrix.txt",
                   header = TRUE, sep = "\t", row.names = 1)
-#guo_meta <- #
+guo_obj <- getGEO(filename="~/Masterthesis/Data/Bulk/Guo/GSE172356_series_matrix.txt") 
+guo_meta <- guo_obj@phenoData@data
+guo_meta_supl <- lapply(1:19, function(x) read_excel("~/Masterthesis/Data/Bulk/Guo/42003_2021_2557_MOESM7_ESM.xlsx",
+                            sheet = x)) ## survival is #11
+guo_meta_github <- lapply(1:7, function(x) read_excel("~/Masterthesis/Data/Bulk/Guo/41588_2019_566_MOESM3_ESM.xlsx",
+                                                       sheet = x))
+# transcripts need to be filtered
+
+
+## Kirby
+kirby <- read.table("~/Masterthesis/Data/Bulk/Kirby/GSE79668_51_tumors_sharedgenecounts.txt",
+                  header = TRUE, sep = "\t", row.names = 1)
+kirby_obj <- getGEO(filename="~/Masterthesis/Data/Bulk/Kirby/GSE79668_series_matrix.txt") 
+kirby_meta <- kirby_obj@phenoData@data
+# transcripts need to be filtered
+
+
+## Moffitt
+## RNA-seq
+moffit_seq <- read.table("~/Masterthesis/Data/Bulk/Moffitt/Moffitt_rna_seq.txt", 
+                         sep = "\t", header = TRUE, row.names = NULL)
+colnames(moffit_seq) <- colnames(moffit_seq)[-1]
+moffit_seq <- moffit_seq[,-66]
+moffit_seq_genes_meta <- moffit_seq[,1:4]
+moffit_seq <- moffit_seq[,-c(2,3,4)]
+moffit_seq_meta <- read.delim("~/Masterthesis/Data/Bulk/Moffitt/Moffitt_meta.txt", 
+                              sep = "\t", header = FALSE, row.names = 1)
+moffit_seq_meta <- t(moffit_seq_meta[,-62])
+rownames(moffit_seq_meta) <- sub("-", "_",moffit_seq_meta[,1])
+# transcripts need to be filtered
+## microarray
+moffit_array_obj <- getGEO(filename="~/Masterthesis/Data/Bulk/Moffitt/GSE71729_series_matrix.txt")  
+moffit_array <- moffit_array_obj@assayData$exprs #getGEO(filename="~/Masterthesis/Data/Bulk/Moffitt/GSE71729_RAW.tar")#
+moffit_array_meta <- moffit_array_obj@phenoData@data
+
+
+## Janky
+janky_obj <- getGEO(filename="~/Masterthesis/Data/Bulk/Janky/GSE62165_series_matrix.txt")  
+janky <- janky_obj@assayData$exprs # gen namen sind in feature data (aber auch duplicates) # transcripts need to be filtered
+janky_meta <-janky_obj@phenoData@data

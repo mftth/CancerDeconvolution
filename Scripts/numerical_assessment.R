@@ -2,7 +2,6 @@
 ## numerical assessment of SCDC
 
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
-library(bseqsc)
 #library(RMThreshold)
 
 #set.seed(4)
@@ -65,20 +64,20 @@ pseudo_bulk_data <- pseudo_bulk$pseudo_eset@assayData$exprs
 #  colnames(pseudo_bulk_data_noise[[i]]) <- colnames(pseudo_bulk_data)
 #}
 
-pseudo_bulk_data_noise <- add_noise(matr = pseudo_bulk_data, times = 10)
-pseudo_bulk_data_noise2 <- add_noise_iteratively(matr = pseudo_bulk_data, times = 10)
+#pseudo_bulk_data_noise <- add_noise(matr = pseudo_bulk_data, times = 10)
+pseudo_bulk_data_noise <- add_noise_iteratively(matr = pseudo_bulk_data, times = 10)
 
 
 
 ## for each matrix (i.e. original and noised ones) perform decon with framework
-pseudo_decon <- Calculate_pvalue(ncores = 15, silent = FALSE, bulk_data = pseudo_bulk_data,
+pseudo_decon <- Calculate_pvalue(nrep = 1000, ncores = 15, silent = FALSE, bulk_data = pseudo_bulk_data,
                                  bulk_meta = pseudo_bulk$pseudo_eset@phenoData@data,
                                  sc_data = qc_baron$sc.eset.qc, cell_types = cts,
                                  ensemble = FALSE, multiple_donors = TRUE)
 
 
 pseudo_decon_noise <- lapply(pseudo_bulk_data_noise, 
-                             function(x) Calculate_pvalue(ncores = 15, silent = FALSE, bulk_data = x,
+                             function(x) Calculate_pvalue(nrep = 1000, ncores = 15, silent = FALSE, bulk_data = x,
                                                           bulk_meta = pseudo_bulk$pseudo_eset@phenoData@data,
                                                           sc_data = qc_baron$sc.eset.qc, cell_types = cts,
                                                           ensemble = FALSE, multiple_donors = TRUE))
@@ -102,9 +101,11 @@ plot(sapply(scdc_metrics, function(x) x[1]))
 plot(sapply(scdc_metrics, function(x) x[2]))
 plot(sapply(scdc_metrics, function(x) x[3]))
 
-save.image("~/Masterthesis/Workspaces/numerical_assessment.RData")
+#save.image("~/Masterthesis/Workspaces/numerical_assessment.RData")
+save.image("~/Masterthesis/test2.RData")
 
 ## for each matrix (i.e. original and noised ones) perform decon with cibersort/bseqsc
+library(bseqsc)
 setwd("~/artdeco/artdeco")
 devtools::load_all()
 bseqsc_config('~/artdeco/CIBERSORT.R')
