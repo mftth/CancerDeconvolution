@@ -92,14 +92,43 @@ rmsd_pval <- lapply(pseudo_decon_all, function(x) x$p_value_wy_rmsd)
 scdc_metrics <- lapply(ct_props, 
                        function(x) SCDC_peval(ptrue = pseudo_bulk_truep, pest = x, 
                                               pest.names = "pseudo_bulk")$evals.table)
+pearson_scdc <- sapply(pseudo_decon_all, function(x) x$statistics_observed$pearson_vec)
+rmsd_scdc <- sapply(pseudo_decon_all, function(x) x$statistics_observed$rmsd_vec)
 
-plot(do.call(c, pearson_pval))
-plot(do.call(c, spearman_pval))
-plot(do.call(c, mad_pval))
-plot(do.call(c, rmsd_pval))
-plot(sapply(scdc_metrics, function(x) x[1]))
-plot(sapply(scdc_metrics, function(x) x[2]))
-plot(sapply(scdc_metrics, function(x) x[3]))
+
+# plot(do.call(c, pearson_pval))
+# plot(do.call(c, spearman_pval))
+# plot(do.call(c, mad_pval))
+# plot(do.call(c, rmsd_pval))
+# plot(sapply(scdc_metrics, function(x) x[1]))
+# plot(sapply(scdc_metrics, function(x) x[2]))
+# plot(sapply(scdc_metrics, function(x) x[3]))
+
+## df: v1 = iteration, v2 = sample, v3 = pvalue
+spearman_pval_all <- as.data.frame(sapply(pseudo_decon_all, function(x) x$p_value_per_sample$Spearman))
+spearman_pval_all$sample <- colnames(pseudo_bulk_data)
+spearman_pval_all <- melt(spearman_pval_all)
+spearman_pval_all_plot <- ggplot(spearman_pval_all, aes(x=variable, y=value)) + 
+  geom_boxplot()
+
+mad_pval_all <- as.data.frame(sapply(pseudo_decon_all, function(x) x$p_value_per_sample$mAD))
+mad_pval_all$sample <- colnames(pseudo_bulk_data)
+mad_pval_all <- melt(mad_pval_all)
+mad_pval_all <- ggplot(mad_pval_all, aes(x=variable, y=value)) + 
+  geom_boxplot()
+
+pearson_scdc <- as.data.frame(pearson_scdc)
+pearson_scdc$sample <- colnames(pseudo_bulk_data)
+pearson_scdc <- melt(pearson_scdc)
+pearson_scdc_plot <- ggplot(pearson_scdc, aes(x=variable, y=value)) + 
+  geom_boxplot()
+
+rmsd_scdc <- as.data.frame(rmsd_scdc)
+rmsd_scdc$sample <- colnames(pseudo_bulk_data)
+rmsd_scdc <- melt(rmsd_scdc)
+rmsd_scdc_plot <- ggplot(rmsd_scdc, aes(x=variable, y=value)) + 
+  geom_boxplot()
+
 
 #save.image("~/Masterthesis/Workspaces/numerical_assessment.RData")
 save.image("~/Masterthesis/test2.RData")
@@ -144,61 +173,81 @@ scdc_metrics_cibersort[error_cibersort] <- lapply(ct_props_cibersort[error_ciber
                                               pest.names = "pseudo_bulk")$evals.table)
 
 
-plot(sapply(pearson_pval_cibersort[error_cibersort], function(x) mean(x)))
-plot(sapply(rmse_cibersort[error_cibersort], function(x) mean(x)))
-plot(sapply(correlation_cibersort[error_cibersort], function(x) mean(x)))
-plot(sapply(scdc_metrics_cibersort[error_cibersort], function(x) x[1]))
-plot(sapply(scdc_metrics_cibersort[error_cibersort], function(x) x[2]))
-plot(sapply(scdc_metrics_cibersort[error_cibersort], function(x) x[3]))
+# plot(sapply(pearson_pval_cibersort[error_cibersort], function(x) mean(x)))
+# plot(sapply(rmse_cibersort[error_cibersort], function(x) mean(x)))
+# plot(sapply(correlation_cibersort[error_cibersort], function(x) mean(x)))
+# plot(sapply(scdc_metrics_cibersort[error_cibersort], function(x) x[1]))
+# plot(sapply(scdc_metrics_cibersort[error_cibersort], function(x) x[2]))
+# plot(sapply(scdc_metrics_cibersort[error_cibersort], function(x) x[3]))
 
-save.image("~/Masterthesis/Workspaces/numerical_assessment.RData")
+cibersort_pearson_pval_all <- as.data.frame(do.call(cbind, pearson_pval_cibersort))
+cibersort_pearson_pval_all$sample <- colnames(pseudo_bulk_data)
+cibersort_pearson_pval_all <- melt(cibersort_pearson_pval_all)
+cibersort_pearson_pval_all_plot <- ggplot(cibersort_pearson_pval_all, aes(x=variable, y=value)) + 
+  geom_boxplot()
+
+cibersort_rmse_all <- as.data.frame(do.call(cbind, rmse_cibersort))
+cibersort_rmse_all$sample <- colnames(pseudo_bulk_data)
+cibersort_rmse_all <- melt(cibersort_rmse_all)
+cibersort_rmse_all_plot <- ggplot(cibersort_rmse_all, aes(x=variable, y=value)) + 
+  geom_boxplot()
+
+cibersort_correlation_all <- as.data.frame(do.call(cbind, correlation_cibersort))
+cibersort_correlation_all$sample <- colnames(pseudo_bulk_data)
+cibersort_correlation_all <- melt(cibersort_correlation_all)
+cibersort_correlation_all_plot <- ggplot(cibersort_correlation_all, aes(x=variable, y=value)) + 
+  geom_boxplot()
+
+
+save.image("~/Masterthesis/test2.RData")
 
 #######################################
 library(ggplot2)
+library(ggpubr)
 
 # compare pearson pvalue of canceRdeconvolution and p-value of artdeco
-pearson_pval_comparison <- data.frame(method = rep(c("SCDC", "bseqsc"), 
-                                                   each = length(error_cibersort)), 
-                                      noise_iteration = rep(error_cibersort, 2), 
-                                      pearson_pvalue = NA)
-pearson_pval_comparison$pearson_pvalue[1:length(error_cibersort)] <- 
-  sapply(pseudo_decon_all[error_cibersort], function(x) mean(x$p_value_per_sample$Pearson))
-pearson_pval_comparison$pearson_pvalue[(length(error_cibersort)+1):nrow(pearson_pval_comparison)] <- 
-  sapply(pearson_pval_cibersort[error_cibersort], function(x) mean(x))
-
-pearson_pval_comparison_plot <- ggplot(pearson_pval_comparison,
-                                       aes(x = noise_iteration, y = pearson_pvalue, color = method)) + 
-                                geom_point()
+# pearson_pval_comparison <- data.frame(method = rep(c("SCDC", "bseqsc"), 
+#                                                    each = length(error_cibersort)), 
+#                                       noise_iteration = rep(error_cibersort, 2), 
+#                                       pearson_pvalue = NA)
+# pearson_pval_comparison$pearson_pvalue[1:length(error_cibersort)] <- 
+#   sapply(pseudo_decon_all[error_cibersort], function(x) mean(x$p_value_per_sample$Pearson))
+# pearson_pval_comparison$pearson_pvalue[(length(error_cibersort)+1):nrow(pearson_pval_comparison)] <- 
+#   sapply(pearson_pval_cibersort[error_cibersort], function(x) mean(x))
+# 
+# pearson_pval_comparison_plot <- ggplot(pearson_pval_comparison,
+#                                        aes(x = noise_iteration, y = pearson_pvalue, color = method)) + 
+#                                 geom_point()
 pearson_pval_comparison_plot
-
-# compare rmsd of canceRdeconvolution and rmse of artdeco
-rmsd_comparison <- data.frame(method = rep(c("SCDC", "bseqsc"), 
-                                           each = length(error_cibersort)), 
-                              noise_iteration = rep(error_cibersort, 2), 
-                              rmsd = NA)
-rmsd_comparison$rmsd[1:length(error_cibersort)] <- 
-  sapply(pseudo_decon_all[error_cibersort], function(x) mean(x$statistics_observed$rmsd_vec))
-rmsd_comparison$rmsd[(length(error_cibersort)+1):nrow(rmsd_comparison)] <- 
-  sapply(rmse_cibersort[error_cibersort], function(x) mean(x))
-
-rmsd_comparison_plot <- ggplot(rmsd_comparison,
-                               aes(x = noise_iteration, y = rmsd, color = method)) + 
-  geom_point() # differences in each method are not visible anymore, plot them individually
+# 
+# # compare rmsd of canceRdeconvolution and rmse of artdeco
+# rmsd_comparison <- data.frame(method = rep(c("SCDC", "bseqsc"), 
+#                                            each = length(error_cibersort)), 
+#                               noise_iteration = rep(error_cibersort, 2), 
+#                               rmsd = NA)
+# rmsd_comparison$rmsd[1:length(error_cibersort)] <- 
+#   sapply(pseudo_decon_all[error_cibersort], function(x) mean(x$statistics_observed$rmsd_vec))
+# rmsd_comparison$rmsd[(length(error_cibersort)+1):nrow(rmsd_comparison)] <- 
+#   sapply(rmse_cibersort[error_cibersort], function(x) mean(x))
+# 
+# rmsd_comparison_plot <- ggplot(rmsd_comparison,
+#                                aes(x = noise_iteration, y = rmsd, color = method)) + 
+#   geom_point() # differences in each method are not visible anymore, plot them individually
 rmsd_comparison_plot
-
-# compare pearson correlation of canceRdeconvolution and correlation of artdeco
-corr_comparison <- data.frame(method = rep(c("SCDC", "bseqsc"), 
-                                           each = length(error_cibersort)), 
-                              noise_iteration = rep(error_cibersort, 2), 
-                              corr = NA)
-corr_comparison$corr[1:length(error_cibersort)] <- 
-  sapply(pseudo_decon_all[error_cibersort], function(x) mean(x$statistics_observed$pearson_vec))
-corr_comparison$corr[(length(error_cibersort)+1):nrow(corr_comparison)] <- 
-  sapply(correlation_cibersort[error_cibersort], function(x) mean(x))
-
-corr_comparison_plot <- ggplot(corr_comparison,
-                               aes(x = noise_iteration, y = corr, color = method)) + 
-  geom_point()
+# 
+# # compare pearson correlation of canceRdeconvolution and correlation of artdeco
+# corr_comparison <- data.frame(method = rep(c("SCDC", "bseqsc"), 
+#                                            each = length(error_cibersort)), 
+#                               noise_iteration = rep(error_cibersort, 2), 
+#                               corr = NA)
+# corr_comparison$corr[1:length(error_cibersort)] <- 
+#   sapply(pseudo_decon_all[error_cibersort], function(x) mean(x$statistics_observed$pearson_vec))
+# corr_comparison$corr[(length(error_cibersort)+1):nrow(corr_comparison)] <- 
+#   sapply(correlation_cibersort[error_cibersort], function(x) mean(x))
+# 
+# corr_comparison_plot <- ggplot(corr_comparison,
+#                                aes(x = noise_iteration, y = corr, color = method)) + 
+#   geom_point()
 corr_comparison_plot
 
 # compare scdc metrics of canceRdeconvolution and scdc metrics of artdeco
@@ -233,5 +282,10 @@ metrics_R_comparison_plot <- ggplot(metrics_comparison,
                                     aes(x = noise_iteration, y = R, color = method)) + 
   geom_point()
 metrics_R_comparison_plot
+
+
+ggarrange(spearman_pval_all_plot, cibersort_pearson_pval_all_plot, ncol = 1)
+ggarrange(rmsd_scdc_plot, cibersort_rmse_all_plot, ncol = 1)
+ggarrange(pearson_scdc_plot, cibersort_correlation_all_plot, ncol = 1)
 
 save.image("~/Masterthesis/Workspaces/numerical_assessment.RData")

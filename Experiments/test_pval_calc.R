@@ -52,6 +52,7 @@ colnames(random_bulk) <- colnames(repset)
 
 ####### old pval calc #######
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
+## was changed. use get_permuted_basis_statistics function from misc folder
 
 decon_pval_random_old <- Calculate_pvalue(nrep = reps, ncores = ncores,  bulk_data = random_bulk, sc_data = qc_baron$sc.eset.qc,
                                       bulk_meta = repset_meta, cell_types = cts, ensemble = FALSE,
@@ -111,7 +112,7 @@ decon_pval_old$p_value_wy_rmsd # new version: 0.996
 
 
 ####### new pval calc #######
-source("~/Masterthesis/test.R")
+source("~/Masterthesis/misc/test.R")
 
 decon_pval_random_new <- Calculate_pvalue(nrep = reps, ncores = ncores,  bulk_data = random_bulk, sc_data = qc_baron$sc.eset.qc,
                                           bulk_meta = repset_meta, cell_types = cts, ensemble = FALSE,
