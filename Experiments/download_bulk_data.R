@@ -120,6 +120,7 @@ paad_genes <- paad_genes[-which(paad_genes == "?")]
 paad_max_var_genes <- sapply(unique(paad_genes), function(x) get_max_var_genes(paad_raw, x, paad_genes))
 paad_raw <- paad_raw[paad_max_var_genes,]
 rownames(paad_raw) <- names(paad_max_var_genes)
+colnames(paad_raw)[which(duplicated(colnames(paad_raw)))] <- rownames(paad_meta)[which(duplicated(colnames(paad_raw)))]
 
 write.table(paad_raw, file = "~/Masterthesis/Data/Bulk/PAAD/PAAD_raw_bulk.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
@@ -138,6 +139,8 @@ guo_meta_supl <- lapply(1:19, function(x) read_excel("~/Masterthesis/Data/Bulk/G
                             sheet = x)) ## survival is #11
 guo_survival <- guo_meta_supl[[11]]
 guo_meta <- cbind(guo_meta, guo_survival[match(guo_meta$description.1, guo_survival$Sample_ID),])
+guo_meta <- data.frame(guo_meta)
+colnames(guo) <- rownames(guo_meta)
 
 write.table(guo, file = "~/Masterthesis/Data/Bulk/Guo/Guo_bulk.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
@@ -156,6 +159,7 @@ kirby_genes <- unname(sapply(rownames(kirby), function(x) strsplit(x, split = "_
 kirby_max_var_genes <- sapply(unique(kirby_genes), function(x) get_max_var_genes(kirby, x, kirby_genes))
 kirby <- kirby[kirby_max_var_genes,]
 rownames(kirby) <- names(kirby_max_var_genes)
+colnames(kirby) <- rownames(kirby_meta)
 
 write.table(kirby, file = "~/Masterthesis/Data/Bulk/Kirby/Kirby_bulk.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
@@ -183,6 +187,7 @@ moffit_seq_max_var_genes <- sapply(unique(moffit_seq$Gene), function(x) get_max_
 moffit_seq <- moffit_seq[moffit_seq_max_var_genes,]
 rownames(moffit_seq) <- names(moffit_seq_max_var_genes)
 moffit_seq <- moffit_seq[,-1]
+moffit_seq_meta <- as.data.frame(moffit_seq_meta)
 
 write.table(moffit_seq, file = "~/Masterthesis/Data/Bulk/Moffitt/Moffitt_seq_bulk.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
@@ -195,6 +200,7 @@ saveRDS(moffit_seq_meta, file = "~/Masterthesis/Data/Bulk/Moffitt/Moffitt_seq_me
 moffit_array_obj <- getGEO(filename="~/Masterthesis/Data/Bulk/Moffitt/GSE71729_series_matrix.txt")  
 moffit_array <- moffit_array_obj@assayData$exprs #getGEO(filename="~/Masterthesis/Data/Bulk/Moffitt/GSE71729_RAW.tar")#
 moffit_array_meta <- moffit_array_obj@phenoData@data
+moffit_array <- as.data.frame(moffit_array)
 
 write.table(moffit_array, file = "~/Masterthesis/Data/Bulk/Moffitt/Moffitt_array_bulk.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
