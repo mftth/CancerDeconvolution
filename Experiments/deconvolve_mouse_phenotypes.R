@@ -91,19 +91,20 @@ chapuy_decon <- Calculate_pvalue(nrep = 2000, ncores = 15, bulk_data = chapuy,
                                  bulk_meta = chapuy_meta, sc_data = qc_senescence$sc.eset.qc,
                                  cell_types = unique(qc_senescence$sc.eset.qc$cluster),
                                  ensemble = FALSE, multiple_donors = FALSE)
-
+saveRDS(chapuy_decon, "~/Masterthesis/Deconvolution_results/DLBCL/chapuy_decon.RDS")
 
 mouse_decon <- Calculate_pvalue(nrep = 2000, ncores = 15, bulk_data = mouse,
                                 bulk_meta = mouse_meta, sc_data = qc_senescence$sc.eset.qc,
                                 cell_types = unique(qc_senescence$sc.eset.qc$cluster),
                                 ensemble = FALSE, multiple_donors = FALSE)
+saveRDS(mouse_decon, "~/Masterthesis/Deconvolution_results/DLBCL/mouse_decon.RDS")
 
 
 schmitz_decon <- Calculate_pvalue(nrep = 2000, ncores = 15, bulk_data = schmitz,
                                   bulk_meta = schmitz_meta, sc_data = qc_senescence$sc.eset.qc,
                                   cell_types = unique(qc_senescence$sc.eset.qc$cluster),
                                   ensemble = FALSE, multiple_donors = FALSE)
-
+saveRDS(schmitz_decon, "~/Masterthesis/Deconvolution_results/DLBCL/schmitz_decon.RDS")
 
 ## ADR_ki67_high is almost completely 1, always
 ## try normalize scRNA-seq data
