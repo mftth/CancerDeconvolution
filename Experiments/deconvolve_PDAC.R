@@ -65,8 +65,9 @@ reps <- 1000
 ncores <- 15
 cts <- c("alpha", "beta", "gamma", "delta", "acinar", "ductal")
 cts_tosti <- c("sacinar", "racinar", "iacinar", "ductal", "mductal", "alpha", "beta", "gamma", "delta")
-res_path_baron <- "~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Baron"
 
+###
+res_path_baron <- "~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Baron"
 decon_baron <- lapply(1:length(bulk_list), function(x) {
   decon_baron_x <- Calculate_pvalue(nrep = reps, ncores = ncores, silent = FALSE, 
                                     bulk_data = bulk_list[[x]], bulk_meta = bulk_meta_list[[x]],
@@ -79,3 +80,14 @@ decon_baron <- lapply(1:length(bulk_list),
                       function(x) readRDS(file = paste(res_path_baron, "/", names(bulk_list)[x], 
                                                        "_decon.RDS", sep = "")))
 names(decon_baron) <- names(bulk_list)
+###
+###
+res_path_tosti <- "~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Tosti"
+decon_tosti <- lapply(1:length(bulk_list), function(x) {
+  decon_tosti_x <- Calculate_pvalue(nrep = reps, ncores = ncores, silent = FALSE, 
+                                    bulk_data = bulk_list[[x]], bulk_meta = bulk_meta_list[[x]],
+                                    sc_data = qc_tosti_sc$sc.eset.qc, cell_types = cts_tosti,
+                                    ensemble = FALSE, multiple_donors = TRUE)
+  saveRDS(decon_tosti_x, file = paste(res_path_tosti, "/", names(bulk_list)[x], "_decon.RDS", sep = ""))
+})
+###
