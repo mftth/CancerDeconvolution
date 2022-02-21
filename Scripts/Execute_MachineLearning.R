@@ -78,6 +78,8 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
   ## train on RF model selected features
   if(length(predictors(rfProfile)) == length(trainData[, - ncol(trainData)])){
     predictors_red <- predictors(rfProfile)[1:5]
+  } else {
+    predictors_red <- predictors(rfProfile)
   }
   trainData_red <- trainData[, predictors_red]
   message("Training a model on selected features ..")

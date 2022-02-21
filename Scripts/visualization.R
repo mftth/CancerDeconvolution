@@ -16,7 +16,7 @@ library(ggpubr)
 
 ## 3) cell type proportions plots (as heatmap or bar plots)
 heatmap_proportions <- function(decon_output, clinical_characteristics = NA, ...){
-  # clinical char is dataframe (one or more)
+  # clinical char is dataframe (one or more) with rownames as meta data
   # deconoutput ist output von framework
   heatmap_proportions <- pheatmap(decon_output$decon_res$prop.est.mvw,
                                   annotation_row = clinical_characteristics,
@@ -39,6 +39,41 @@ barplot_proportions <- function(decon_output, clinical_characteristics_vec){
   return(barplot_proportions)
 }
 
+
+## p-value plot
+boxplot_pvalue <- function(decon_output_list, pvalue_type = "spearman"){
+  ## decon_output_list = named list of multiple decon outputs, preferably of the same sc rna-seq dataset
+  ## pvalue_type = c("pearson", "spearman", "mad", "rmsd)
+  
+  if(is.null(names(decon_output_list))){
+    stop("The list of deconvolution outputs has to be named!")
+  }
+  
+  if(pvalue_type == "pearson"){
+    idx <- 1
+  } else if (pvalue_type == "spearman"){
+    idx <- 2
+  } else if (pvalue_type == "mad"){
+    idx <- 3
+  } else if (pvalue_type == "rmsd"){
+    idx <- 4
+  }
+  
+decon_pval <- lapply(decon_output_list, function(x) x$p_value_per_sample[[idx]])
+sample_names <- lapply(decon_output_list, function(x) rownames(x$decon_res$prop.est.mvw))
+bulk_names <- lapply(1:length(decon_pval), 
+                     function(x) rep(names(decon_pval)[x], 
+                                     times = length(decon_pval[[x]])))
+boxplot_df <- data.frame("log10_pvalue" = log10(Reduce(c, decon_pval)), 
+                         "sample" = Reduce(c, sample_names),
+                         "bulk_dataset" = Reduce(c, bulk_names)) 
+pval_all_plot <- ggplot(boxplot_df, aes(x=bulk_dataset, y=log10_pvalue)) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  geom_hline(yintercept=log10(0.05), linetype="dashed", color = "red")
+
+return(pval_all_plot)
+}
 
 ## 4) heatmap correlation plots of marker genes annotated with cell type proportions and clinical characteristics
 heatmap_corr_genes <- function(decon_output = NULL, bulk_data, clinical_characteristics, 
@@ -92,12 +127,20 @@ barplot_ML_evaluation <- function(model_evaluation_list){
   }
   
   eval_table_list <- lapply(model_evaluation_list, function(x) x$byClass)
+  eval_classes <- lapply(model_evaluation_list, function(x) rownames(x$table))
   # create data frame ready for ggplot2
   for (idx in 1:length(eval_table_list)) {
-    eval_table_list[[idx]] <- as.data.frame(eval_table_list[[idx]])
-    eval_table_list[[idx]]$Model <- names(eval_table_list)[idx]
-    eval_table_list[[idx]]$Class <- sapply(strsplit(rownames(eval_table_list[[idx]]), split = "Class: "), 
-                                           function(x) x[2])
+    if(class(eval_table_list[[idx]])[1] == "numeric"){
+      eval_table_list[[idx]] <- as.data.frame(t(eval_table_list[[idx]]))
+      eval_table_list[[idx]]$Model <- names(eval_table_list)[idx]
+      eval_table_list[[idx]]$Class <- paste0(c(eval_classes[[idx]]), collapse = "_")
+    } else {
+      eval_table_list[[idx]] <- as.data.frame(eval_table_list[[idx]])
+      eval_table_list[[idx]]$Model <- names(eval_table_list)[idx]
+      eval_table_list[[idx]]$Class <- eval_classes[[idx]]
+      #sapply(strsplit(rownames(eval_table_list[[idx]]), split = "Class: "), 
+                                    #       function(x) x[2])
+    }
     rownames(eval_table_list[[idx]]) <- NULL
   }
   eval_table <- as.data.frame(Reduce(rbind, eval_table_list))

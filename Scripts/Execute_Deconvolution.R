@@ -5,7 +5,7 @@
 ## ouput is new SCDC "model", deconvolution result and possibly p-value of deconvolution
 
 source("~/SCDC/SCDC/R/Basic_Functions.R")
-source("~/SCDC/SCDC/R/Deconvolution.R")
+#source("~/SCDC/SCDC/R/Deconvolution.R")
 
 
 prepare_decon_res <- function(p_value, decon_res, clinical_char, observed_statistics = NULL){
