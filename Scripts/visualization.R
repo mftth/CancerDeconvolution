@@ -64,13 +64,13 @@ sample_names <- lapply(decon_output_list, function(x) rownames(x$decon_res$prop.
 bulk_names <- lapply(1:length(decon_pval), 
                      function(x) rep(names(decon_pval)[x], 
                                      times = length(decon_pval[[x]])))
-boxplot_df <- data.frame("log10_pvalue" = log10(Reduce(c, decon_pval)), 
+boxplot_df <- data.frame("neg_log10_pvalue" = -log10(Reduce(c, decon_pval)), 
                          "sample" = Reduce(c, sample_names),
                          "bulk_dataset" = Reduce(c, bulk_names)) 
-pval_all_plot <- ggplot(boxplot_df, aes(x=bulk_dataset, y=log10_pvalue)) + 
-  geom_boxplot() + 
+pval_all_plot <- ggplot(boxplot_df, aes(x=bulk_dataset, y=neg_log10_pvalue)) + 
+  geom_boxplot() + ylab("-log10(pvalue)") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  geom_hline(yintercept=log10(0.05), linetype="dashed", color = "red")
+  geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
 
 return(pval_all_plot)
 }

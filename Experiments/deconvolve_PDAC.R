@@ -8,7 +8,9 @@
 ## mit lapply compute_pvalue ausfuehren
 ## nreps = 1000, ncores = 15
 ## ergebnisse pro dataset darstellen
-## survival analysis machen
+## survival analysis
+## correlation analysis
+## ML anaylsis
 ## vllt iwas mit basal, classical und hybrid type
 ## ecotyper zeugs?
 
@@ -105,6 +107,7 @@ baron_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_baron,
 tosti_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_tosti,
                                               pvalue_type = "spearman")
 ggarrange(baron_pval_boxplot_spearman, tosti_pval_boxplot_spearman)
+
 baron_pval_boxplot_mad <- boxplot_pvalue(decon_output_list = decon_baron,
                                               pvalue_type = "mad")
 tosti_pval_boxplot_mad <- boxplot_pvalue(decon_output_list = decon_tosti,
@@ -113,9 +116,13 @@ ggarrange(baron_pval_boxplot_mad, tosti_pval_boxplot_mad)
 
 ## grading
 baron_yang_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$Yang,
-                                               clinical_characteristics = data.frame("grading" = Yang_meta$`grading:ch1`, stage = Yang_meta$`Stage:ch1`, row.names = rownames(Yang_meta)))
+                                               clinical_characteristics = data.frame("grading" = Yang_meta$`grading:ch1`, 
+                                                                                     stage = Yang_meta$`Stage:ch1`, 
+                                                                                     row.names = rownames(Yang_meta)))
 tosti_yang_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Yang,
-                                               clinical_characteristics = data.frame("grading" = Yang_meta$`grading:ch1`, stage = Yang_meta$`Stage:ch1`, row.names = rownames(Yang_meta)))
+                                               clinical_characteristics = data.frame("grading" = Yang_meta$`grading:ch1`, 
+                                                                                     stage = Yang_meta$`Stage:ch1`, 
+                                                                                     row.names = rownames(Yang_meta)))
 
 baron_yang_prop_bar <- barplot_proportions(decon_output = decon_baron$Yang,
                                                clinical_characteristics = Yang_meta$`grading:ch1`)
@@ -123,9 +130,12 @@ tosti_yang_prop_bar <- barplot_proportions(decon_output = decon_tosti$Yang,
                                                clinical_characteristics = Yang_meta$`grading:ch1`)
 
 baron_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$PAAD,
-                                               clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade, row.names = rownames(PAAD_meta)))
+                                               clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade,
+                                                                                     row.names = rownames(PAAD_meta)))
 tosti_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$PAAD,
-                                               clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade, row.names = rownames(PAAD_meta)))
+                                               clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade,
+                                                                                     row.names = rownames(PAAD_meta)), 
+                                               clustering_method = "ward.D2")
 
 baron_PAAD_prop_bar <- barplot_proportions(decon_output = decon_baron$PAAD,
                                            clinical_characteristics = PAAD_meta$neoplasm_histologic_grade)
