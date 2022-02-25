@@ -68,7 +68,7 @@ boxplot_df <- data.frame("neg_log10_pvalue" = -log10(Reduce(c, decon_pval)),
                          "sample" = Reduce(c, sample_names),
                          "bulk_dataset" = Reduce(c, bulk_names)) 
 pval_all_plot <- ggplot(boxplot_df, aes(x=bulk_dataset, y=neg_log10_pvalue)) + 
-  geom_boxplot() + ylab("-log10(pvalue)") +
+  geom_boxplot() + ylab( paste0("-log10(", pvalue_type, " pvalue)", collapse = "")) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
 
@@ -172,3 +172,75 @@ barplot_ML_evaluation <- function(model_evaluation_list){
   return(barplot_ML_eval)
 }
 
+
+boxplot_ML_sd <- function(ml_model_list, folds = 5, repeats = 10){
+  ## ml_model_list is a list of models given by train_ML_model$rf_model_* function
+  ## ACHTUNG funktioniert nur fuer zwei-klassen model!!
+  if(is.null(names(ml_model_list))){
+    names(ml_model_list) <- sapply(1:length(ml_model_list), 
+                                           function(x) paste0("model", x, collapse = ""))
+  }
+  
+  cv_bestTune <- lapply(ml_model_list, function(x) as.numeric(x$bestTune))
+  cv_list <- lapply(1:length(ml_model_list), 
+                    function(x) ml_model_list[[x]]$pred[ml_model_list[[x]]$pred$mtry == cv_bestTune[[x]],])
+  names(cv_list) <- names(ml_model_list)
+  
+  for (i in 1:length(cv_list)) {
+    cv_list[[i]]$fold <- as.character(Reduce(rbind, strsplit(cv_list[[i]]$Resample, "\\."))[,1])
+    cv_list[[i]]$rep <- as.character(Reduce(rbind, strsplit(cv_list[[i]]$Resample, "\\."))[,2])
+    
+    cv_list_repeat_acc <- c()
+    cv_list_repeat_sens <- c()
+    cv_list_repeat_spec <- c()
+    for (j in 1:repeats) {
+      if(j < 10){
+        repeat_str <- paste0("Rep0", j, sep= "")
+      } else {
+        repeat_str <- paste0("Rep", j, sep= "")
+      }
+      repeat_table <- cv_list[[i]][cv_list[[i]]$rep == repeat_str,]
+      repeat_confusion_matrix <- caret::confusionMatrix(repeat_table$pred, 
+                                                        repeat_table$obs, 
+                                                        mode = "everything")$byClass
+      repeat_accuracy <- unname(repeat_confusion_matrix['Balanced Accuracy'])
+      cv_list_repeat_acc <- c(cv_list_repeat_acc, repeat_accuracy)
+      repeat_sensitivity <- unname(repeat_confusion_matrix['Sensitivity'])
+      cv_list_repeat_sens <- c(cv_list_repeat_sens, repeat_sensitivity)
+      repeat_specificty <- unname(repeat_confusion_matrix['Specificity']) 
+      cv_list_repeat_spec <- c(cv_list_repeat_spec, repeat_specificty)
+    }
+    
+    cv_list_repeat_perf <- data.frame("Accuracy" = cv_list_repeat_acc,
+                                      "Sensitivity" = cv_list_repeat_sens,
+                                      "Specificity" = cv_list_repeat_spec)
+    
+    cv_list[[i]] <- list("table_complete" = cv_list[[i]],
+                         "performance_cv" = cv_list_repeat_perf)
+  }
+  
+  perf_all_models <- Reduce(rbind,lapply(cv_list, function(x) x$performance_cv))
+  perf_all_models$Model <- rep(names(cv_list), each = nrow(cv_list[[1]]$performance_cv))
+  perf_all_models_molten <- melt(perf_all_models)
+  
+  boxplot_ML_eval <- ggplot(perf_all_models_molten, aes(x=variable, y=value, fill = Model)) + 
+    geom_boxplot() + #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    ylim(0,1) + ylab("Performance value") + xlab("Performance characteristic")
+  
+  # boxplot_ML_acc <- ggplot(perf_all_models, aes(x=Model, y=Accuracy)) + 
+  #   geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  #   ylim(0,1)
+  # 
+  # boxplot_ML_sens <- ggplot(perf_all_models, aes(x=Model, y=Sensitivity)) + 
+  #   geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  #   ylim(0,1)
+  # 
+  # boxplot_ML_spec <- ggplot(perf_all_models, aes(x=Model, y=Specificity)) + 
+  #   geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  #   ylim(0,1)
+  # 
+  # boxplot_ML_eval <- ggarrange(boxplot_ML_acc, boxplot_ML_sens, boxplot_ML_spec, nrow = 1)
+  
+  return(boxplot_ML_eval)
+  
+}

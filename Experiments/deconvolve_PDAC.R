@@ -38,6 +38,8 @@ Janky_meta <- readRDS("~/Masterthesis/Data/Bulk/Janky/Janky_metadata.RDS")
 Kirby_bulk <- readRDS("~/Masterthesis/Data/Bulk/Kirby/Kirby_bulk.RDS")
 Kirby_meta <- readRDS("~/Masterthesis/Data/Bulk/Kirby/Kirby_metadata.RDS")
 ## 61 samples; RNA-seq
+## 15 primary tumors, 37 pancreatic cancer patient-derived xenografts (PDXs), 
+## 3 PDAC cell lines and 6 cancer-associated fibroblast (CAF)
 Moffitt_seq_bulk <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_seq_bulk.RDS")
 Moffitt_seq_meta <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_seq_metadata.RDS")
 ## 357 samples; survival; tumor subtype; microarray
@@ -102,17 +104,41 @@ decon_tosti <- lapply(1:length(bulk_list),
 names(decon_tosti) <- names(bulk_list)
 ###
 ###
+## remove cell line samples from Moffitseq
+all(rownames(decon_baron$Moffitt_seq$p_value_per_sample) == rownames(Moffitt_seq_meta))
+all(rownames(decon_baron$Moffitt_seq$decon_res$prop.est.mvw) == rownames(Moffitt_seq_meta))
+all(rownames(decon_tosti$Moffitt_seq$p_value_per_sample) == rownames(Moffitt_seq_meta))
+all(rownames(decon_tosti$Moffitt_seq$decon_res$prop.est.mvw) == rownames(Moffitt_seq_meta))
+Moffitt_seq_primary <- which(Moffitt_seq_meta$Primary == 1)
+decon_baron$Moffitt_seq$p_value_per_sample <- decon_baron$Moffitt_seq$p_value_per_sample[Moffitt_seq_primary,]
+decon_baron$Moffitt_seq$decon_res$prop.est.mvw <- decon_baron$Moffitt_seq$decon_res$prop.est.mvw[Moffitt_seq_primary,]
+decon_tosti$Moffitt_seq$p_value_per_sample <- decon_tosti$Moffitt_seq$p_value_per_sample[Moffitt_seq_primary,]
+decon_tosti$Moffitt_seq$decon_res$prop.est.mvw <- decon_tosti$Moffitt_seq$decon_res$prop.est.mvw[Moffitt_seq_primary,]
+
+
 baron_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_baron,
-                                              pvalue_type = "spearman")
+                                              pvalue_type = "spearman") + ggtitle("Reference: Baron et al.") 
 tosti_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_tosti,
-                                              pvalue_type = "spearman")
-ggarrange(baron_pval_boxplot_spearman, tosti_pval_boxplot_spearman)
+                                              pvalue_type = "spearman") + ggtitle("Reference: Tosti et al.")
+ggarrange(baron_pval_boxplot_spearman, tosti_pval_boxplot_spearman) 
+
+baron_pval_boxplot_pearson <- boxplot_pvalue(decon_output_list = decon_baron,
+                                              pvalue_type = "pearson") + ggtitle("Reference: Baron et al.")
+tosti_pval_boxplot_pearson <- boxplot_pvalue(decon_output_list = decon_tosti,
+                                              pvalue_type = "pearson") + ggtitle("Reference: Tosti et al.")
+ggarrange(baron_pval_boxplot_pearson, tosti_pval_boxplot_pearson)
 
 baron_pval_boxplot_mad <- boxplot_pvalue(decon_output_list = decon_baron,
-                                              pvalue_type = "mad")
+                                              pvalue_type = "mad") + ggtitle("Reference: Baron et al.")
 tosti_pval_boxplot_mad <- boxplot_pvalue(decon_output_list = decon_tosti,
-                                              pvalue_type = "mad")
+                                              pvalue_type = "mad") + ggtitle("Reference: Tosti et al.")
 ggarrange(baron_pval_boxplot_mad, tosti_pval_boxplot_mad)
+
+baron_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_baron,
+                                         pvalue_type = "rmsd") + ggtitle("Reference: Baron et al.")
+tosti_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_tosti,
+                                         pvalue_type = "rmsd") + ggtitle("Reference: Tosti et al.")
+ggarrange(baron_pval_boxplot_rmsd, tosti_pval_boxplot_rmsd) 
 
 ## grading
 baron_yang_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$Yang,
@@ -186,8 +212,8 @@ tosti_yang_survival <- survival_analysis(decon_output = decon_tosti$Yang,
 
 
 baron_PAAD_survival <- survival_analysis(decon_output = decon_baron$PAAD, 
-                                         OS = PAAD_OS, censor = PAAD_censor, 
-                                         clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade, "mki67" = as.numeric(PAAD_bulk["MKI67",]),row.names = rownames(PAAD_meta)))
+                                         OS = PAAD_OS, censor = PAAD_censor, cell_types = c("ductal"),
+                                         clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade, row.names = rownames(PAAD_meta)))#"mki67" = as.numeric(PAAD_bulk["MKI67",]),
 tosti_PAAD_survival <- survival_analysis(decon_output = decon_tosti$PAAD, 
                                          OS = PAAD_OS, censor = PAAD_censor, 
                                          clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade, "mki67" = as.numeric(PAAD_bulk["MKI67",]),row.names = rownames(PAAD_meta)))
@@ -228,6 +254,8 @@ baron_yang_ml_model <- train_ML_model(trainData = baron_yang_train)
 baron_yang_ml_pred <- test_ML_model(train_output = baron_yang_ml_model, 
                                     testData = baron_yang_test[,-ncol(baron_yang_test)], 
                                     truth_vec = baron_yang_test$response)
+baron_yang_whole_ml_model <- train_ML_model(trainData = baron_yang_prepped)
+## fasse die zusammen fuer jedes bulk zs mit vergleichsmodell (ki67)
 
 baron_PAAD_prepped <- prepare_decon_res(p_value = TRUE, decon_res = decon_baron$PAAD, clinical_char = PAAD_meta$neoplasm_histologic_grade)
 baron_PAAD_prepped <- baron_PAAD_prepped[-c(13, 17, 79, 100) ,] # remove G4, Gx
@@ -239,6 +267,13 @@ baron_PAAD_ml_model <- train_ML_model(trainData = baron_PAAD_train)
 baron_PAAD_ml_pred <- test_ML_model(train_output = baron_PAAD_ml_model, 
                                     testData = baron_PAAD_test[,-ncol(baron_PAAD_test)], 
                                     truth_vec = baron_PAAD_test$response)
+baron_PAAD_prepped2 <- baron_PAAD_prepped
+baron_PAAD_prepped2$response <- as.character(baron_PAAD_prepped2$response)
+baron_PAAD_prepped2$response[baron_PAAD_prepped2$response == "G1"] <- "G1_G2"
+baron_PAAD_prepped2$response[baron_PAAD_prepped2$response == "G2"] <- "G1_G2"
+baron_PAAD_prepped2$response <- factor(baron_PAAD_prepped2$response, levels = c("G1_G2", "G3"))
+baron_PAAD_whole_ml_model <- train_ML_model(trainData = baron_PAAD_prepped2)
+
 
 tosti_yang_prepped <- prepare_decon_res(p_value = TRUE, decon_res = decon_tosti$Yang, clinical_char = Yang_meta$`grading:ch1`)
 tosti_yang_prepped <- tosti_yang_prepped[-c(32, 66, 67, 68) ,] # remove G1, G4, Gx
@@ -250,6 +285,7 @@ tosti_yang_ml_model <- train_ML_model(trainData = tosti_yang_train)
 tosti_yang_ml_pred <- test_ML_model(train_output = tosti_yang_ml_model, 
                                     testData = tosti_yang_test[,-ncol(tosti_yang_test)], 
                                     truth_vec = tosti_yang_test$response)
+tosti_yang_whole_ml_model <- train_ML_model(trainData = tosti_yang_prepped)
 
 tosti_PAAD_prepped <- prepare_decon_res(p_value = TRUE, decon_res = decon_tosti$PAAD, clinical_char = PAAD_meta$neoplasm_histologic_grade)
 tosti_PAAD_prepped <- tosti_PAAD_prepped[-c(13, 17, 79, 100) ,] # remove G4, Gx
@@ -261,6 +297,12 @@ tosti_PAAD_ml_model <- train_ML_model(trainData = tosti_PAAD_train)
 tosti_PAAD_ml_pred <- test_ML_model(train_output = tosti_PAAD_ml_model, 
                                     testData = tosti_PAAD_test[,-ncol(tosti_PAAD_test)], 
                                     truth_vec = tosti_PAAD_test$response)
+tosti_PAAD_prepped2 <- tosti_PAAD_prepped
+tosti_PAAD_prepped2$response <- as.character(tosti_PAAD_prepped2$response)
+tosti_PAAD_prepped2$response[tosti_PAAD_prepped2$response == "G1"] <- "G1_G2"
+tosti_PAAD_prepped2$response[tosti_PAAD_prepped2$response == "G2"] <- "G1_G2"
+tosti_PAAD_prepped2$response <- factor(tosti_PAAD_prepped2$response, levels = c("G1_G2", "G3"))
+tosti_PAAD_whole_ml_model <- train_ML_model(trainData = tosti_PAAD_prepped2)
 
 
 ##################
@@ -280,3 +322,15 @@ ml_model_eval_PAAD <- list("baron_PAAD" = baron_PAAD_ml_pred$evaluation_reduced,
                            "tosti_PAAD" = tosti_PAAD_ml_pred$evaluation_reduced)
 ml_model_eval_yang_plot <- barplot_ML_evaluation(ml_model_eval_yang)
 ml_model_eval_PAAD_plot <- barplot_ML_evaluation(ml_model_eval_PAAD)
+
+
+ml_model_yang <- list(#"baron_yang_whole" = baron_yang_whole_ml_model$rf_model_whole,
+                      "baron_yang" = baron_yang_whole_ml_model$rf_model_reduced,
+                      #"tosti_yang_whole" = tosti_yang_whole_ml_model$rf_model_whole,
+                      "tosti_yang" = tosti_yang_whole_ml_model$rf_model_reduced)
+ml_model_PAAD <- list(#"baron_PAAD_whole" = baron_PAAD_whole_ml_model$rf_model_whole,
+                      "baron_PAAD" = baron_PAAD_whole_ml_model$rf_model_reduced,
+                      #"tosti_PAAD_whole" = tosti_PAAD_whole_ml_model$rf_model_whole,
+                      "tosti_PAAD" = tosti_PAAD_whole_ml_model$rf_model_reduced)
+ml_model_yang_plot <- boxplot_ML_sd(ml_model_yang)
+ml_model_PAAD_plot <- boxplot_ML_sd(ml_model_PAAD)
