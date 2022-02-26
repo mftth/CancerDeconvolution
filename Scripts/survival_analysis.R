@@ -17,7 +17,7 @@ continuous_to_discrete <- function(con_vec, col_name){
   return(dis_vec)
 }
 
-survival_analysis <- function(decon_output, cell_types = NULL, OS, censor, clinical_characteristics){
+survival_analysis <- function(decon_output, cell_types = NULL, OS, censor, clinical_characteristics, ...){
   ## cell_types is vector of cell types of interest (i.e. those investigated in survival analysis)
   ## OS is numeric, censor integer vector
   ## visualize only those with p-value < 0.05
@@ -74,7 +74,7 @@ survival_analysis <- function(decon_output, cell_types = NULL, OS, censor, clini
                           function(x) survminer::surv_pvalue(x, data = survival_meta)$pval)
   
   ## create Kaplan-Meier plots
-  kp_plot <- ggsurvplot(survival_fit, data = survival_meta, combine = TRUE)
+  kp_plot <- ggsurvplot(survival_fit, data = survival_meta, combine = TRUE, ...)
   single_kp_plots <- lapply(survival_fit, 
                             function(x) ggsurvplot(x, data = survival_meta, pval = TRUE))
   

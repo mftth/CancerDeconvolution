@@ -194,6 +194,8 @@ tosti_Moffitt_array_prop_bar <- barplot_proportions(decon_output = decon_tosti$M
 ## survival analysis
 Yang_OS <- as.numeric(Yang_meta$`survival months:ch1`)
 Yang_censor <- as.numeric(Yang_meta$`survival status:ch1`)
+Yang_OS <- Yang_OS[-c(32, 66, 67, 68)]
+Yang_censor <- Yang_censor[-c(32, 66, 67, 68)]
 PAAD_OS <- rep(NA, nrow(PAAD_meta))
 PAAD_OS[which(is.na(PAAD_meta$days_to_death))] <- PAAD_meta$days_to_last_followup[which(is.na(PAAD_meta$days_to_death))]
 PAAD_OS[which(is.na(PAAD_meta$days_to_last_followup))] <- PAAD_meta$days_to_death[which(is.na(PAAD_meta$days_to_last_followup))]
@@ -201,22 +203,40 @@ PAAD_OS <- as.numeric(PAAD_OS)
 PAAD_censor <- rep(NA, nrow(PAAD_meta))
 PAAD_censor[which(PAAD_meta$vital_status == "alive")] <- 0
 PAAD_censor[which(PAAD_meta$vital_status == "dead")] <- 1
+PAAD_OS <- PAAD_OS[-c(13, 17, 79, 100)]
+PAAD_censor <- PAAD_censor[-c(13, 17, 79, 100)]
 
+decon_baron_surv <- decon_baron
+decon_tosti_surv <- decon_tosti
+decon_baron_surv$Yang$decon_res$prop.est.mvw <-decon_baron_surv$Yang$decon_res$prop.est.mvw[-c(32, 66, 67, 68),]
+decon_tosti_surv$Yang$decon_res$prop.est.mvw <-decon_tosti_surv$Yang$decon_res$prop.est.mvw[-c(32, 66, 67, 68),]
+decon_baron_surv$PAAD$decon_res$prop.est.mvw <-decon_baron_surv$PAAD$decon_res$prop.est.mvw[-c(13, 17, 79, 100),]
+decon_tosti_surv$PAAD$decon_res$prop.est.mvw <-decon_tosti_surv$PAAD$decon_res$prop.est.mvw[-c(13, 17, 79, 100),]
 
-baron_yang_survival <- survival_analysis(decon_output = decon_baron$Yang, 
+baron_yang_survival <- survival_analysis(decon_output = decon_baron_surv$Yang, 
                                          OS = Yang_OS, censor = Yang_censor, 
-                                         clinical_characteristics =  data.frame("grading" = Yang_meta$`grading:ch1`, "mki67" = as.numeric(Yang_bulk["MKI67",]), row.names = rownames(Yang_meta)))
-tosti_yang_survival <- survival_analysis(decon_output = decon_tosti$Yang, 
+                                         clinical_characteristics =  data.frame("grading" = Yang_meta$`grading:ch1`[-c(32, 66, 67, 68)], 
+                                                                                "mki67" = as.numeric(Yang_bulk["MKI67",])[-c(32, 66, 67, 68)], 
+                                                                                row.names = rownames(Yang_meta)[-c(32, 66, 67, 68)]))
+tosti_yang_survival <- survival_analysis(decon_output = decon_tosti_surv$Yang, 
                                          OS = Yang_OS, censor = Yang_censor, 
-                                         clinical_characteristics =  data.frame("grading" = Yang_meta$`grading:ch1`, "mki67" = as.numeric(Yang_bulk["MKI67",]),row.names = rownames(Yang_meta)))
+                                         clinical_characteristics =  data.frame("grading" = Yang_meta$`grading:ch1`[-c(32, 66, 67, 68)], 
+                                                                                "mki67" = as.numeric(Yang_bulk["MKI67",])[-c(32, 66, 67, 68)],
+                                                                                row.names = rownames(Yang_meta)[-c(32, 66, 67, 68)]))
 
 
-baron_PAAD_survival <- survival_analysis(decon_output = decon_baron$PAAD, 
-                                         OS = PAAD_OS, censor = PAAD_censor, cell_types = c("ductal"),
-                                         clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade, row.names = rownames(PAAD_meta)))#"mki67" = as.numeric(PAAD_bulk["MKI67",]),
-tosti_PAAD_survival <- survival_analysis(decon_output = decon_tosti$PAAD, 
+baron_PAAD_survival <- survival_analysis(decon_output = decon_baron_surv$PAAD, 
+                                         OS = PAAD_OS, censor = PAAD_censor, cell_types = "acinar",
+                                         clinical_characteristics =  data.frame(#"grading" = PAAD_meta$neoplasm_histologic_grade[-c(13, 17, 79, 100)], 
+                                                                                "mki67" = as.numeric(PAAD_bulk["MKI67",])[-c(13, 17, 79, 100)],
+                                                                                row.names = rownames(PAAD_meta)[-c(13, 17, 79, 100)]),
+                                         legend.labs = c("baron_PAAD_acinar_high", "baron_PAAD_acinar_low", "MKi67_high", "MKi67_low"), xlab = "Time in days")
+
+tosti_PAAD_survival <- survival_analysis(decon_output = decon_tosti_surv$PAAD, 
                                          OS = PAAD_OS, censor = PAAD_censor, 
-                                         clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade, "mki67" = as.numeric(PAAD_bulk["MKI67",]),row.names = rownames(PAAD_meta)))
+                                         clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade[-c(13, 17, 79, 100)], 
+                                                                                "mki67" = as.numeric(PAAD_bulk["MKI67",])[-c(13, 17, 79, 100)],
+                                                                                row.names = rownames(PAAD_meta)[-c(13, 17, 79, 100)]))
 
 
 ##################
@@ -334,3 +354,45 @@ ml_model_PAAD <- list(#"baron_PAAD_whole" = baron_PAAD_whole_ml_model$rf_model_w
                       "tosti_PAAD" = tosti_PAAD_whole_ml_model$rf_model_reduced)
 ml_model_yang_plot <- boxplot_ML_sd(ml_model_yang)
 ml_model_PAAD_plot <- boxplot_ML_sd(ml_model_PAAD)
+boxplot_ML_sd(c(ml_model_yang, ml_model_PAAD))
+
+######################
+## Mki-67 comparison model
+fitControl <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  repeats = 10,
+  sampling = "down",
+  savePred = TRUE
+)
+
+yang_mki67_df <- data.frame("mki67" = as.numeric(Yang_bulk["MKI67",]),
+                            "response" = Yang_meta$`grading:ch1`, 
+                            row.names = rownames(Yang_meta))
+yang_mki67_df <- yang_mki67_df[-c(32, 66, 67, 68) ,] # remove G1, G4, Gx
+yang_mki67_df$response <- factor(yang_mki67_df$response, levels = c("G2", "G3"))
+yang_mki67_model <- train(x = data.frame("mki67" = yang_mki67_df$mki67, row.names = rownames(yang_mki67_df)), 
+                          y = yang_mki67_df$response, 
+                          method = "rf", metric = "Accuracy", trControl = fitControl,
+                          type = "Classification", ntree = 500)
+PAAD_mki67_df <- data.frame("mki67" = as.numeric(PAAD_bulk["MKI67",]),
+                            "response" = PAAD_meta$neoplasm_histologic_grade, 
+                            row.names = rownames(PAAD_meta))
+PAAD_mki67_df <- PAAD_mki67_df[-c(13, 17, 79, 100) ,] # remove G4, Gx
+PAAD_mki67_df$response <- toupper(PAAD_mki67_df$response)
+PAAD_mki67_df$response[PAAD_mki67_df$response == "G1"] <- "G1_G2"
+PAAD_mki67_df$response[PAAD_mki67_df$response == "G2"] <- "G1_G2"
+PAAD_mki67_df$response <- factor(PAAD_mki67_df$response, levels = c("G1_G2", "G3"))
+PAAD_mki67_model <- train(x = data.frame("mki67" = PAAD_mki67_df$mki67, row.names = rownames(PAAD_mki67_df)), 
+                          y = PAAD_mki67_df$response, 
+                          method = "rf", metric = "Accuracy", trControl = fitControl,
+                          type = "Classification", ntree = 500)
+mki67_ct_models <- list("baron_yang" = baron_yang_whole_ml_model$rf_model_reduced,
+                        "tosti_yang" = tosti_yang_whole_ml_model$rf_model_reduced,
+                        "mki67_yang" = yang_mki67_model)
+boxplot_ML_sd(mki67_ct_models)
+mki67_ct_models2 <- list("baron_PAAD" = baron_PAAD_whole_ml_model$rf_model_reduced,
+                        "tosti_PAAD" = tosti_PAAD_whole_ml_model$rf_model_reduced,
+                        "mki67_PAAD" = PAAD_mki67_model )
+boxplot_ML_sd(mki67_ct_models2)
+boxplot_ML_sd(c(mki67_ct_models, mki67_ct_models2))
