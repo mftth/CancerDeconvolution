@@ -81,7 +81,7 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
   } else {
     predictors_red <- predictors(rfProfile)
   }
-  trainData_red <- trainData[, predictors_red]
+  trainData_red <- data.frame(trainData[, predictors_red], row.names = rownames(trainData))
   message("Training a model on selected features ..")
   model_rf_red <- train(x = trainData_red, 
                         y = trainData$response, 
