@@ -103,6 +103,10 @@ tosti_guo_survival <- survival_analysis(decon_output = guo_tosti_decon_surv, OS 
 
 
 ## correlation analysis
+## import basal_classical signatures to create comparative baseline model
+basal_classical_signature <- data.frame(t(read.table("~/Masterthesis/Data/Bulk/Moffitt/basal_classical_signature.txt",
+                                                     header = FALSE, row.names = 1, sep = "\t")))
+
 baron_guo_correlation <- correlation_analysis(decon_output = Guo_baron_decon, 
                                               clinical_characteristic = Guo_meta$description)
 tosti_guo_correlation <- correlation_analysis(decon_output = Guo_tosti_decon, 
@@ -146,15 +150,44 @@ tosti_guo_prepped2 <- tosti_guo_prepped[-guo_hybrid,]
 tosti_guo_prepped2$response <- factor(tosti_guo_prepped2$response, levels = c("Basal", "Classical"))
 tosti_guo_ml_model <- train_ML_model(trainData = tosti_guo_prepped2)
 
+
+Guo_signature_genes <- Guo_bulk[c(basal_classical_signature$Basal_like, basal_classical_signature$Classical),]
+Guo_signature_genes <- t(na.omit(Guo_signature_genes))
+all(rownames(Guo_signature_genes) == rownames(Guo_meta))
+Guo_signature_genes <- data.frame(Guo_signature_genes, "response" = Guo_meta$description)
+Guo_signature_genes$response <- factor(Guo_signature_genes$response, levels = c("Basal", "Classical", "Hybrid"))
+Guo_signature_trainRowNumbers <- createDataPartition(Guo_signature_genes$response, p = 0.8, list = FALSE)
+Guo_signature_train <- Guo_signature_genes[Guo_signature_trainRowNumbers,]
+Guo_signature_test <- Guo_signature_genes[-Guo_signature_trainRowNumbers,]
+Guo_signature_test$response <- factor(Guo_signature_test$response, levels = c("Basal", "Classical", "Hybrid"))
+Guo_baseline_model <- train_ML_model(trainData = Guo_signature_train)
+Guo_baseline_pred <- test_ML_model(train_output = Guo_baseline_model, 
+                                   testData = Guo_signature_test[,-ncol(Guo_signature_test)], 
+                                   truth_vec = Guo_signature_test$response)
+Guo_baseline_roc <- roc_curve(labels = Guo_signature_test$response,
+                              predictions =  Guo_baseline_pred$predicted_reduced, levels = c("Basal", "Classical", "Hybrid"))
+Guo_signature_genes2 <- Guo_signature_genes[-guo_hybrid,]
+Guo_signature_genes2$response <- factor(Guo_signature_genes2$response, levels = c("Basal", "Classical"))
+Guo_baseline_model2 <- train_ML_model(trainData = Guo_signature_genes2)
+Guo_signature_genes3 <- data.frame("KRAS" = as.numeric(Guo_bulk["KRAS",]), "GATA6" = as.numeric(Guo_bulk["GATA6",]), 
+                                   "response" = Guo_meta$description, row.names = rownames(Guo_meta))
+Guo_signature_genes3 <- Guo_signature_genes3[-guo_hybrid,]
+Guo_signature_genes3$response <- factor(Guo_signature_genes3$response, levels = c("Basal", "Classical"))
+Guo_baseline_model3 <- train_ML_model(trainData = Guo_signature_genes3, feature_selection = FALSE)
+
+
 barplot_ML_evaluation(list(#"baron_guo_whole" = baron_guo_ml_pred$evaluation_whole,
                            "baron_guo_reduced" = baron_guo_ml_pred$evaluation_reduced,
                            #"tosti_guo_whole" = tosti_guo_ml_pred$evaluation_whole,
-                           "tosti_guo_reduced" = tosti_guo_ml_pred$evaluation_reduced))
+                           "tosti_guo_reduced" = tosti_guo_ml_pred$evaluation_reduced,
+                           "baseline_reduced" = Guo_baseline_pred$evaluation_reduced))
 
 boxplot_ML_sd(list("baron_guo" = baron_guo_ml_model$rf_model_whole,
                    #"baron_guo_reduced" = baron_guo_ml_model$rf_model_reduced,
-                   "tosti_guo" = tosti_guo_ml_model$rf_model_whole))#,
+                   "tosti_guo" = tosti_guo_ml_model$rf_model_whole,
+                   "baseline_guo_whole" = Guo_baseline_model3$rf_model_whole))#,
                    #"tosti_guo_reduced" = tosti_guo_ml_model$rf_model_reduced))
+
 
 
 baron_moffitt_prepped <- prepare_decon_res(p_value = TRUE, decon_res = Moffitt_array_baron_decon, 
@@ -185,7 +218,41 @@ tosti_moffitt_ml_model <- train_ML_model(trainData = tosti_moffitt_prepped)
 #tosti_moffitt_roc <- roc_curve(labels = tosti_moffitt_test$response, 
 #                           predictions = tosti_moffitt_ml_pred$predicted_reduced, levels = c("Basal", "Hybrid", "Classical"))
 
+
+Moffitt_signature_genes <- Moffitt_array_bulk[c(basal_classical_signature$Basal_like, basal_classical_signature$Classical),]
+Moffitt_signature_genes <- t(na.omit(Moffitt_signature_genes))
+all(rownames(Moffitt_signature_genes) == rownames(Moffitt_array_meta))
+Moffitt_signature_genes <- data.frame(Moffitt_signature_genes, "response" = Moffitt_array_meta$tumor_subtype)
+Moffitt_signature_genes <- Moffitt_signature_genes[!is.na(Moffitt_signature_genes$response),]
+Moffitt_signature_genes$response <- factor(Moffitt_signature_genes$response, levels = c("Basal", "Classical"))
+Moffitt_baseline_model <- train_ML_model(trainData = Moffitt_signature_genes)
+
+Moffitt_signature_genes2 <- data.frame("KRAS" = as.numeric(Moffitt_array_bulk["KRAS",]), "GATA6" = as.numeric(Moffitt_array_bulk["GATA6",]), 
+                                   "response" = Moffitt_array_meta$tumor_subtype, row.names = rownames(Moffitt_array_meta))
+Moffitt_signature_genes2 <- Moffitt_signature_genes2[!is.na(Moffitt_signature_genes2$response),]
+Moffitt_signature_genes2$response <- factor(Moffitt_signature_genes2$response, levels = c("Basal", "Classical"))
+Moffitt_baseline_model2 <- train_ML_model(trainData = Moffitt_signature_genes2, feature_selection = FALSE)
+#Moffitt_signature_trainRowNumbers <- createDataPartition(Moffitt_signature_genes$response, p = 0.8, list = FALSE)
+#Moffitt_signature_train <- Moffitt_signature_genes[Moffitt_signature_trainRowNumbers,]
+#Moffitt_signature_test <- Moffitt_signature_genes[-Moffitt_signature_trainRowNumbers,]
+#Moffitt_signature_test$response <- factor(Moffitt_signature_test$response, levels = c("Basal", "Classical", "Hybrid"))
+#Moffitt_baseline_model <- train_ML_model(trainData = Moffitt_signature_train)
+#Moffitt_baseline_pred <- test_ML_model(train_output = Moffitt_baseline_model, 
+#                                   testData = Moffitt_signature_test[,-ncol(Moffitt_signature_test)], 
+#                                   truth_vec = Moffitt_signature_test$response)
+#Moffitt_baseline_roc <- roc_curve(labels = Moffitt_signature_test$response,
+#                              predictions =  Moffitt_baseline_pred$predicted_reduced, levels = c("Basal", "Classical", "Hybrid"))
+
+
+
 boxplot_ML_sd(list(#"baron_moffitt_whole" = baron_moffitt_ml_model$rf_model_whole,
                    "baron_moffitt_reduced" = baron_moffitt_ml_model$rf_model_reduced,
                    #"tosti_moffitt_whole" = tosti_moffitt_ml_model$rf_model_whole,
-                   "tosti_moffitt_reduced" = tosti_moffitt_ml_model$rf_model_reduced))
+                   "tosti_moffitt_reduced" = tosti_moffitt_ml_model$rf_model_reduced,
+                   "baseline_moffitt_whole" = Moffitt_baseline_model2$rf_model_whole))
+                   #"baseline_moffitt_reduced" = Moffitt_baseline_model$rf_model_reduced))
+
+boxplot_ML_sd(list("baron_guo" = baron_guo_ml_model$rf_model_whole,
+                   #"baron_guo_reduced" = baron_guo_ml_model$rf_model_reduced,
+                   "tosti_guo" = tosti_guo_ml_model$rf_model_whole,
+                   "baseline_model" = Moffitt_baseline_model$rf_model_reduced))

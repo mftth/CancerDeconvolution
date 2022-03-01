@@ -12,7 +12,7 @@ library(caret)
 library(skimr)
 
 
-train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "scale", classification = TRUE){
+train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "scale", classification = TRUE, feature_selection = TRUE){
   ## descriptive statistics (necessary? kinda)
   skimmed <- skim(trainData)
   
@@ -40,22 +40,6 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
     my_sampling <- NULL
   }
   
-  ## feature selection
-  subsets <- c(1:8)
-  # creates a control object, i.e. a list of options for specifying the model and method
-  ctrl <- rfeControl(functions = rfFuncs, # rfFuncs = random forest
-                     method = "repeatedcv",
-                     number = 5,
-                     repeats = 10,
-                     verbose = FALSE)
-  
-  message("Performing feature selection ..")
-  rfProfile <- rfe(x = trainData[,-ncol(trainData)], # rfe is feature selection algorithm
-                   y = trainData$response,
-                   sizes = subsets,
-                   rfeControl = ctrl,
-                   metric = my_metric)
-  
   fitControl <- trainControl(
     method = "repeatedcv",
     number = 5,
@@ -76,24 +60,45 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
   varimp_rf <- varImp(model_rf)
   
   ## train on RF model selected features
-  if(length(predictors(rfProfile)) == length(trainData[, - ncol(trainData)])){
-    predictors_red <- predictors(rfProfile)[1:5]
-  } else {
-    predictors_red <- predictors(rfProfile)
-  }
-  trainData_red <- data.frame(trainData[, predictors_red], row.names = rownames(trainData))
-  message("Training a model on selected features ..")
-  model_rf_red <- train(x = trainData_red, 
-                        y = trainData$response, 
-                        method = 'rf', 
-                        metric = my_metric,
-                        trControl = fitControl, 
-                        type = my_type,
-                        ntree = 500)
-  varimp_rf_red <- varImp(model_rf_red)
+  ## feature selection
+  if(feature_selection){
+    subsets <- c(1:8)
+    # creates a control object, i.e. a list of options for specifying the model and method
+    ctrl <- rfeControl(functions = rfFuncs, # rfFuncs = random forest
+                       method = "repeatedcv",
+                       number = 5,
+                       repeats = 10,
+                       verbose = FALSE)
   
-  train_output <- list("rf_model_whole" = model_rf, "rf_model_reduced" = model_rf_red, 
-                       "varimp_whole" = varimp_rf, "varimp_reduced" = varimp_rf_red)
+    message("Performing feature selection ..")
+    rfProfile <- rfe(x = trainData[,-ncol(trainData)], # rfe is feature selection algorithm
+                     y = trainData$response,
+                     sizes = subsets,
+                     rfeControl = ctrl,
+                     metric = my_metric)
+  
+    if(length(predictors(rfProfile)) == length(trainData[, - ncol(trainData)])){
+      predictors_red <- predictors(rfProfile)[1:5]
+    } else {
+      predictors_red <- predictors(rfProfile)
+    }
+    trainData_red <- data.frame(trainData[, predictors_red], row.names = rownames(trainData))
+    message("Training a model on selected features ..")
+    model_rf_red <- train(x = trainData_red, 
+                          y = trainData$response, 
+                          method = 'rf', 
+                          metric = my_metric,
+                          trControl = fitControl, 
+                          type = my_type,
+                          ntree = 500)
+    varimp_rf_red <- varImp(model_rf_red)
+  
+    train_output <- list("rf_model_whole" = model_rf, "rf_model_reduced" = model_rf_red, 
+                         "varimp_whole" = varimp_rf, "varimp_reduced" = varimp_rf_red)
+  } else {
+    train_output <- list("rf_model_whole" = model_rf,"varimp_whole" = varimp_rf)
+  }
+  
   return(train_output)
 }
 
