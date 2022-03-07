@@ -1,3 +1,8 @@
+## Mastherthesis, Melanie Fattohi
+## scRNA-seq data by Tosti, Baron
+## bulk RNA-seq data by Guo and Moffitt
+## analysis of association between ct props and tumor subtypes in PDAC (Basal-like, Classical)
+
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 source("~/Masterthesis/CancerDeconvolution/Scripts/visualization.R")
 source("~/Masterthesis/CancerDeconvolution/Scripts/survival_analysis.R")
@@ -10,6 +15,12 @@ Guo_bulk <- readRDS("~/Masterthesis/Data/Bulk/Guo/Guo_bulk.RDS")
 Guo_meta <- readRDS("~/Masterthesis/Data/Bulk/Guo/Guo_metadata.RDS")
 Guo_baron_decon <- readRDS("~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Baron/Guo_decon.RDS")
 Guo_tosti_decon <- readRDS("~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Tosti/Guo_decon.RDS")
+PAAD_tosti_decon <- readRDS("~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Tosti/PAAD_decon.RDS")
+Yang_tosti_decon <- readRDS("~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Tosti/Yang_decon.RDS")
+PAAD_bulk <- readRDS("~/Masterthesis/Data/Bulk/PAAD/PAAD_raw_bulk.RDS")
+PAAD_meta <- readRDS("~/Masterthesis/Data/Bulk/PAAD/PAAD_metadata.RDS")
+Yang_bulk <- readRDS("~/Masterthesis/Data/Bulk/Yang/Yang_bulk.RDS")
+Yang_meta <- readRDS("~/Masterthesis/Data/Bulk/Yang/Yang_metadata.RDS")
 
 ## 357 samples; survival; tumor subtype; microarray
 ## 0 NA, 1 Classical, 2 Basal
@@ -46,6 +57,33 @@ tosti_guo_heatmap_corr <- heatmap_corr_genes(decon_output = Guo_tosti_decon, bul
                                              clinical_characteristics = data.frame(Guo_meta$description,
                                                                                    row.names = rownames(Guo_meta)),
                                              clustering_method = "median")
+
+tosti_guo_signature_heatmap <- heatmap_corr_genes(decon_output = Guo_tosti_decon, 
+                                                  bulk_data = Guo_bulk,
+                                                  clinical_characteristics = data.frame(Guo_meta$description,
+                                                                                        row.names = rownames(Guo_meta)),
+                                                  marker_genes = basal_classical_signature$Classical)
+Guo_tosti_decon2 <-  Guo_tosti_decon
+Guo_tosti_decon2$decon_res$prop.est.mvw <-  Guo_tosti_decon2$decon_res$prop.est.mvw[,c("gamma", "mductal", "racinar", "sacinar")]
+Guo_tosti_prop_discreate <- sapply(1:ncol(Guo_tosti_decon2$decon_res$prop.est.mvw), 
+                                   function(x) continuous_to_discrete(Guo_tosti_decon2$decon_res$prop.est.mvw[,x], 
+                                                                      col_name = colnames(Guo_tosti_decon2$decon_res$prop.est.mvw)[x]))
+colnames(Guo_tosti_prop_discreate) <- colnames(Guo_tosti_decon2$decon_res$prop.est.mvw)
+tosti_guo_signature_heatmap2 <- heatmap_corr_genes(decon_output = Guo_tosti_decon2, 
+                                                   bulk_data = Guo_bulk,
+                                                   clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
+                                                                                        #Guo_tosti_prop_discreate,
+                                                                                        row.names = rownames(Guo_meta)),
+                                                  marker_genes = guo_signature$V1)
+
+PAAD_signature_heatmap <- heatmap_corr_genes(bulk_data = PAAD_bulk, 
+                                             clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade,
+                                                                                   row.names = rownames(PAAD_meta)),
+                                             marker_genes = guo_signature$V1)
+Yang_signature_heatmap <- heatmap_corr_genes(bulk_data = Yang_bulk, 
+                                             clinical_characteristics = data.frame("grading" = Yang_meta$`grading:ch1`,
+                                                                                   row.names = rownames(Yang_meta)),
+                                             marker_genes = c(basal_classical_signature$Classical, basal_classical_signature$Basal_like))
 
 #baron_moffitt_heatmap_corr <- heatmap_corr_genes(decon_output = Moffitt_array_baron_decon, bulk_data = Moffitt_array_bulk,
 #                                             clinical_characteristics = data.frame(Moffitt_array_meta$tumor_subtype,
@@ -93,6 +131,15 @@ Guo_Zensur[Guo_Zensur == 2] <- 1
 #guo_tosti_decon_surv$decon_res$prop.est.mvw <- guo_tosti_decon_surv$decon_res$prop.est.mvw[-guo_hybrid,]
 #Guo_OS <- Guo_OS[-guo_hybrid]
 #Guo_Zensur <- Guo_Zensur[-guo_hybrid]
+Moffitt_survival <- data.frame("OS" = as.numeric(Moffitt_array_meta$`survival_months:ch2`), 
+                               "censor" = as.numeric(Moffitt_array_meta$`death_event_1death_0censor:ch2`), 
+                               row.names = rownames(Moffitt_array_meta))
+Moffitt_survival_NA <- is.na(Moffitt_survival$OS)
+Moffitt_baron_decon_surv <- Moffitt_array_baron_decon
+Moffitt_baron_decon_surv$decon_res$prop.est.mvw <- Moffitt_baron_decon_surv$decon_res$prop.est.mvw[!Moffitt_survival_NA,]
+Moffitt_tosti_decon_surv <- Moffitt_array_tosti_decon
+Moffitt_tosti_decon_surv$decon_res$prop.est.mvw <- Moffitt_tosti_decon_surv$decon_res$prop.est.mvw[!Moffitt_survival_NA,]
+Moffitt_survival <- Moffitt_survival[!Moffitt_survival_NA,]
 
 baron_guo_survival <- survival_analysis(decon_output = guo_baron_decon_surv, OS = Guo_OS, censor = Guo_Zensur, 
                                         clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description[-guo_hybrid], 
@@ -101,12 +148,17 @@ tosti_guo_survival <- survival_analysis(decon_output = guo_tosti_decon_surv, OS 
                                         clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description[-guo_hybrid], 
                                                                               row.names = rownames(Guo_meta)[-guo_hybrid]))
 
+baron_moffitt_survival <- survival_analysis(decon_output = Moffitt_baron_decon_surv, OS = Moffitt_survival$OS, 
+                                            censor = Moffitt_survival$censor, 
+                                            clinical_characteristics = data.frame("tumor_subtype" = Moffitt_array_meta$tumor_subtype[!Moffitt_survival_NA], 
+                                                                                  row.names = rownames(Moffitt_survival)))
+tosti_moffitt_survival <- survival_analysis(decon_output =  Moffitt_tosti_decon_surv, OS = Moffitt_survival$OS, 
+                                            censor = Moffitt_survival$censor, 
+                                            clinical_characteristics = data.frame("tumor_subtype" = Moffitt_array_meta$tumor_subtype[!Moffitt_survival_NA], 
+                                                                                  row.names = rownames(Moffitt_survival)))
+
 
 ## correlation analysis
-## import basal_classical signatures to create comparative baseline model
-basal_classical_signature <- data.frame(t(read.table("~/Masterthesis/Data/Bulk/Moffitt/basal_classical_signature.txt",
-                                                     header = FALSE, row.names = 1, sep = "\t")))
-
 baron_guo_correlation <- correlation_analysis(decon_output = Guo_baron_decon, 
                                               clinical_characteristic = Guo_meta$description)
 tosti_guo_correlation <- correlation_analysis(decon_output = Guo_tosti_decon, 
@@ -119,6 +171,13 @@ tosti_moffitt_correlation <- correlation_analysis(decon_output = Moffitt_array_t
 
 
 ## ML analysis
+## import basal_classical signatures to create comparative baseline model
+basal_classical_signature <- data.frame(t(read.table("~/Masterthesis/Data/Bulk/Moffitt/basal_classical_signature.txt",
+                                                     header = FALSE, row.names = 1, sep = "\t")))
+guo_signature <- data.frame(read.table("~/Masterthesis/Data/Bulk/Guo/signature_genes.txt",
+                                       header = FALSE, sep = "\t"))
+
+
 baron_guo_prepped <- prepare_decon_res(p_value = TRUE, decon_res = Guo_baron_decon, 
                                        clinical_char = Guo_meta$description)
 baron_guo_trainRowNumbers <- createDataPartition(baron_guo_prepped$response, p = 0.8, list = FALSE)
@@ -174,6 +233,12 @@ Guo_signature_genes3 <- data.frame("KRAS" = as.numeric(Guo_bulk["KRAS",]), "GATA
 Guo_signature_genes3 <- Guo_signature_genes3[-guo_hybrid,]
 Guo_signature_genes3$response <- factor(Guo_signature_genes3$response, levels = c("Basal", "Classical"))
 Guo_baseline_model3 <- train_ML_model(trainData = Guo_signature_genes3, feature_selection = FALSE)
+Guo_signature_genes4 <- t(Guo_bulk[guo_signature$V1,])
+all(rownames(Guo_signature_genes4) == rownames(Guo_meta))
+Guo_signature_genes4 <- data.frame(Guo_signature_genes4, "response" = Guo_meta$description)
+Guo_signature_genes4 <- Guo_signature_genes4[-guo_hybrid,]
+Guo_signature_genes4$response <- factor(Guo_signature_genes4$response, levels = c("Basal", "Classical"))
+Guo_baseline_model4 <- train_ML_model(trainData = Guo_signature_genes4)
 
 
 barplot_ML_evaluation(list(#"baron_guo_whole" = baron_guo_ml_pred$evaluation_whole,
@@ -182,11 +247,30 @@ barplot_ML_evaluation(list(#"baron_guo_whole" = baron_guo_ml_pred$evaluation_who
                            "tosti_guo_reduced" = tosti_guo_ml_pred$evaluation_reduced,
                            "baseline_reduced" = Guo_baseline_pred$evaluation_reduced))
 
-boxplot_ML_sd(list("baron_guo" = baron_guo_ml_model$rf_model_whole,
-                   #"baron_guo_reduced" = baron_guo_ml_model$rf_model_reduced,
-                   "tosti_guo" = tosti_guo_ml_model$rf_model_whole,
-                   "baseline_guo_whole" = Guo_baseline_model3$rf_model_whole))#,
-                   #"tosti_guo_reduced" = tosti_guo_ml_model$rf_model_reduced))
+guo_baseline_comparison <- boxplot_ML_sd(list("baron_guo" = baron_guo_ml_model$rf_model_whole,
+                                             #"baron_guo_reduced" = baron_guo_ml_model$rf_model_reduced,
+                                              "tosti_guo" = tosti_guo_ml_model$rf_model_whole,
+                                              "baseline_guo" = Guo_baseline_model3$rf_model_whole))#,
+                                             #"tosti_guo_reduced" = tosti_guo_ml_model$rf_model_reduced))
+# guo_baseline_comparison_data <- guo_baseline_comparison$data
+# guo_baseline_comparison_data_acc <- guo_baseline_comparison_data[guo_baseline_comparison_data$variable == "Accuracy",]
+# guo_baseline_comparison_data_acc <- guo_baseline_comparison_data_acc[guo_baseline_comparison_data_acc$Model != "baron_guo",]
+# guo_baseline_comparison_data_acc$Model_code <- integer(nrow(guo_baseline_comparison_data_acc))
+# guo_baseline_comparison_data_acc$Model_code[guo_baseline_comparison_data_acc$Model == "tosti_guo"] <- 1
+# t.test(guo_baseline_comparison_data_acc$value~guo_baseline_comparison_data_acc$Model_code, 
+#        var.equal = FALSE, alternative = "two.sided")
+# guo_baseline_comparison_data_sens <- guo_baseline_comparison_data[guo_baseline_comparison_data$variable == "Sensitivity",]
+# guo_baseline_comparison_data_sens <- guo_baseline_comparison_data_sens[guo_baseline_comparison_data_sens$Model != "baron_guo",]
+# guo_baseline_comparison_data_sens$Model_code <- integer(nrow(guo_baseline_comparison_data_sens))
+# guo_baseline_comparison_data_sens$Model_code[guo_baseline_comparison_data_sens$Model == "tosti_guo"] <- 1
+# t.test(guo_baseline_comparison_data_sens$value~guo_baseline_comparison_data_sens$Model_code, 
+#        var.equal = FALSE, alternative = "two.sided")
+# guo_baseline_comparison_data_spec <- guo_baseline_comparison_data[guo_baseline_comparison_data$variable == "Specificity",]
+# guo_baseline_comparison_data_spec <- guo_baseline_comparison_data_spec[guo_baseline_comparison_data_spec$Model != "baron_guo",]
+# guo_baseline_comparison_data_spec$Model_code <- integer(nrow(guo_baseline_comparison_data_spec))
+# guo_baseline_comparison_data_spec$Model_code[guo_baseline_comparison_data_spec$Model == "tosti_guo"] <- 1
+# t.test(guo_baseline_comparison_data_spec$value~guo_baseline_comparison_data_spec$Model_code, 
+#        var.equal = FALSE, alternative = "two.sided")
 
 
 

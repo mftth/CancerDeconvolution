@@ -284,9 +284,9 @@ baron_PAAD_trainRowNumbers <- createDataPartition(baron_PAAD_prepped$response, p
 baron_PAAD_train <- baron_PAAD_prepped[baron_PAAD_trainRowNumbers,]
 baron_PAAD_test <- baron_PAAD_prepped[-baron_PAAD_trainRowNumbers,]
 baron_PAAD_ml_model <- train_ML_model(trainData = baron_PAAD_train)
-baron_PAAD_ml_pred <- test_ML_model(train_output = baron_PAAD_ml_model, 
-                                    testData = baron_PAAD_test[,-ncol(baron_PAAD_test)], 
-                                    truth_vec = baron_PAAD_test$response)
+#baron_PAAD_ml_pred <- test_ML_model(train_output = baron_PAAD_ml_model, 
+#                                    testData = baron_PAAD_test[,-ncol(baron_PAAD_test)], 
+#                                    truth_vec = baron_PAAD_test$response)
 baron_PAAD_prepped2 <- baron_PAAD_prepped
 baron_PAAD_prepped2$response <- as.character(baron_PAAD_prepped2$response)
 baron_PAAD_prepped2$response[baron_PAAD_prepped2$response == "G1"] <- "G1_G2"
@@ -329,8 +329,8 @@ tosti_PAAD_whole_ml_model <- train_ML_model(trainData = tosti_PAAD_prepped2)
 ## visualize ML results
 baron_yang_roc <- roc_curve(labels = baron_yang_test$response, 
                             predictions = baron_yang_ml_pred$predicted_reduced, levels = c("G2", "G3"))
-baron_PAAD_roc <- roc_curve(labels = baron_PAAD_test$response, 
-                            predictions = baron_PAAD_ml_pred$predicted_reduced, levels = c("G1", "G2", "G3"))
+#baron_PAAD_roc <- roc_curve(labels = baron_PAAD_test$response, 
+#                            predictions = baron_PAAD_ml_pred$predicted_reduced, levels = c("G1", "G2", "G3"))
 tosti_yang_roc <- roc_curve(labels = tosti_yang_test$response, 
                             predictions = tosti_yang_ml_pred$predicted_reduced, levels = c("G2", "G3"))
 tosti_PAAD_roc <- roc_curve(labels = tosti_PAAD_test$response, 
@@ -338,7 +338,7 @@ tosti_PAAD_roc <- roc_curve(labels = tosti_PAAD_test$response,
 
 ml_model_eval_yang <- list("baron_yang" = baron_yang_ml_pred$evaluation_reduced,
                            "tosti_yang" = tosti_yang_ml_pred$evaluation_reduced)
-ml_model_eval_PAAD <- list("baron_PAAD" = baron_PAAD_ml_pred$evaluation_reduced,
+ml_model_eval_PAAD <- list(#"baron_PAAD" = baron_PAAD_ml_pred$evaluation_reduced,
                            "tosti_PAAD" = tosti_PAAD_ml_pred$evaluation_reduced)
 ml_model_eval_yang_plot <- barplot_ML_evaluation(ml_model_eval_yang)
 ml_model_eval_PAAD_plot <- barplot_ML_evaluation(ml_model_eval_PAAD)

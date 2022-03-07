@@ -105,6 +105,7 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
 
 test_ML_model <- function(train_output, testData, truth_vec,  preprocess = FALSE, preprocess_method = "scale",
                           classification = TRUE){ ## test data, aka hold out set
+  ## assumes, feature selection was performed
   ## descriptive statistics
   skimmed <- skim(testData)
   
