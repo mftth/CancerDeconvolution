@@ -76,7 +76,7 @@ return(pval_all_plot)
 }
 
 ## 4) heatmap correlation plots of marker genes annotated with cell type proportions and clinical characteristics
-heatmap_corr_genes <- function(decon_output = NULL, bulk_data, clinical_characteristics, 
+heatmap_corr_genes <- function(decon_output = NULL, bulk_data, clinical_characteristics, cell_types = NULL,
                                marker_genes = NULL, colnames = FALSE, ...){
   # decon_output has to be given if there are no marker genes. Otherwise it is not required
   # clinical_characteristics has to be a data frame, having the colnames of bulk_data as rownames
@@ -90,7 +90,11 @@ heatmap_corr_genes <- function(decon_output = NULL, bulk_data, clinical_characte
   }
   
   if(!is.null(decon_output)){
-    annotation_df <- cbind(clinical_characteristics, decon_output$decon_res$prop.est.mvw)
+    if(!is.null(cell_types)){
+      annotation_df <- cbind(clinical_characteristics, decon_output$decon_res$prop.est.mvw[,cell_types])
+    } else {
+      annotation_df <- cbind(clinical_characteristics, decon_output$decon_res$prop.est.mvw)
+    }
   } else {
     annotation_df <- clinical_characteristics
   }

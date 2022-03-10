@@ -396,3 +396,57 @@ mki67_ct_models2 <- list("baron_PAAD" = baron_PAAD_whole_ml_model$rf_model_reduc
                         "mki67_PAAD" = PAAD_mki67_model )
 boxplot_ML_sd(mki67_ct_models2)
 boxplot_ML_sd(c(mki67_ct_models, mki67_ct_models2))
+
+
+
+
+############################
+basal_classical_signature <- data.frame(t(read.table("~/Masterthesis/Data/Bulk/Moffitt/basal_classical_signature.txt",
+                                                     header = FALSE, row.names = 1, sep = "\t")))
+## import Guo signature
+guo_signature <- data.frame(read.table("~/Masterthesis/Data/Bulk/Guo/signature_genes.txt",
+                                       header = FALSE, sep = "\t"))
+## import supplementary file from Hayashi et al. 2020
+hayashi_PAAD_meta <- read.table("~/Masterthesis/Data/Bulk/PAAD/hayashi_suppl.txt", 
+                                sep = "\t", header = TRUE)
+hayashi_PAAD_meta$TCGA_ID <- hayashi_PAAD_meta$Tumor.Sample.ID
+hayashi_PAAD_meta$TCGA_ID <- gsub("-", ".", hayashi_PAAD_meta$TCGA_ID)
+hayashi_PAAD_meta$TCGA_ID <- sapply(hayashi_PAAD_meta$TCGA_ID, function(x) substr(x, 1, nchar(x)-4))
+rownames(hayashi_PAAD_meta) <- hayashi_PAAD_meta$TCGA_ID
+hayashi_idx <- match(rownames(PAAD_meta), rownames(hayashi_PAAD_meta))
+#hayashi_PAAD_meta$mRNA.Moffitt.clusters..All.150.Samples..1basal..2classical <- as.factor(hayashi_PAAD_meta$mRNA.Moffitt.clusters..All.150.Samples..1basal..2classical)
+hayashi_PAAD_meta$tumor_subtype <- hayashi_PAAD_meta$mRNA.Moffitt.clusters..All.150.Samples..1basal..2classical
+hayashi_PAAD_meta$tumor_subtype[hayashi_PAAD_meta$tumor_subtype == 1] <- "Basal"
+hayashi_PAAD_meta$tumor_subtype[hayashi_PAAD_meta$tumor_subtype == 2] <- "Classical"
+PAAD_meta$tumor_subtype <- hayashi_PAAD_meta$tumor_subtype[hayashi_idx]
+
+tosti_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti_surv$PAAD,
+                                               clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade[-c(13, 17, 79, 100)],
+                                                                                     "tumor_subtype" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
+                                                                                     row.names = rownames(PAAD_meta)[-c(13, 17, 79, 100)]), 
+                                               clustering_method = "ward.D2")
+
+tosti_PAAD_subtype_heatmap <- heatmap_corr_genes(decon_tosti$PAAD, cell_types = c("sacinar", "mductal"),
+                                                 bulk_data = PAAD_bulk, 
+                                                 clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade,
+                                                         "tumor_subtype" = PAAD_meta$tumor_subtype,
+                                                         row.names = rownames(PAAD_meta)),
+                                                 marker_genes = c(basal_classical_signature$Basal, basal_classical_signature$Classical))
+# heatmap_label_order <- rownames(PAAD_meta)[tosti_PAAD_subtype_heatmap$tree_col$order]
+# which(heatmap_label_order == "TCGA.XD.AAUG") #79 until here all are classical
+# which(heatmap_label_order == "TCGA.2J.AABH") #149 until here all are hybrid
+# which(heatmap_label_order == "TCGA.IB.A7LX") #158 from here until
+# which(heatmap_label_order == "TCGA.XN.A8T3") #183 here all are basal
+# heatmap_label_order_type <- heatmap_label_order
+# heatmap_label_order_type[1:79] <- "Classical"
+# heatmap_label_order_type[80:149] <- "Hybrid"
+# heatmap_label_order_type[150:157] <- NA
+# heatmap_label_order_type[158:183] <- "Basal"
+# PAAD_meta$tumor_subtype2 <- heatmap_label_order_type
+
+tosti_PAAD_correlation3 <- correlation_analysis(decon_output = decon_tosti$PAAD, clinical_characteristic = PAAD_meta$tumor_subtype)
+tosti_PAAD_survival2 <- survival_analysis(decon_output = decon_tosti_surv$PAAD, OS = PAAD_OS, censor = PAAD_censor, 
+                                          clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade[-c(13, 17, 79, 100)], 
+                                                                                 "mki67" = as.numeric(PAAD_bulk["MKI67",])[-c(13, 17, 79, 100)],
+                                                                                 "tumor_subtype" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
+                                                                                 row.names = rownames(PAAD_meta)[-c(13, 17, 79, 100)]))
