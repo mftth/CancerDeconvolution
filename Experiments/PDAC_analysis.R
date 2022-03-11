@@ -28,26 +28,26 @@ Moffitt_array_bulk <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_array_b
 Moffitt_array_meta <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_array_metadata.RDS")
 Moffitt_array_baron_decon <- readRDS("~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Baron/Moffitt_array_decon.RDS")
 Moffitt_array_tosti_decon <- readRDS("~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Tosti/Moffitt_array_decon.RDS")
+
+## include only primary cancer samples
+Moffitt_array_primary <- which(Moffitt_array_meta$source_name_ch2 == "Pancreas_Primary")
+Moffitt_array_bulk <- Moffitt_array_bulk[,Moffitt_array_primary]
+Moffitt_array_meta <- Moffitt_array_meta[Moffitt_array_primary,]
+Moffitt_array_baron_decon$p_value_per_sample <- Moffitt_array_baron_decon$p_value_per_sample[Moffitt_array_primary,]
+Moffitt_array_baron_decon$decon_res$prop.est.mvw <- Moffitt_array_baron_decon$decon_res$prop.est.mvw[Moffitt_array_primary,]
+Moffitt_array_baron_decon$statistics_observed$pearson_vec <- Moffitt_array_baron_decon$statistics_observed$pearson_vec[Moffitt_array_primary]
+Moffitt_array_baron_decon$statistics_observed$spearman_vec <- Moffitt_array_baron_decon$statistics_observed$spearman_vec[Moffitt_array_primary]
+Moffitt_array_baron_decon$statistics_observed$mad_vec <- Moffitt_array_baron_decon$statistics_observed$mad_vec[Moffitt_array_primary]
+Moffitt_array_baron_decon$statistics_observed$rmsd_vec <- Moffitt_array_baron_decon$statistics_observed$rmsd_vec[Moffitt_array_primary]
+Moffitt_array_tosti_decon$p_value_per_sample <- Moffitt_array_tosti_decon$p_value_per_sample[Moffitt_array_primary,]
+Moffitt_array_tosti_decon$decon_res$prop.est.mvw <- Moffitt_array_tosti_decon$decon_res$prop.est.mvw[Moffitt_array_primary,]
+Moffitt_array_tosti_decon$statistics_observed$pearson_vec <- Moffitt_array_tosti_decon$statistics_observed$pearson_vec[Moffitt_array_primary]
+Moffitt_array_tosti_decon$statistics_observed$spearman_vec <- Moffitt_array_tosti_decon$statistics_observed$spearman_vec[Moffitt_array_primary]
+Moffitt_array_tosti_decon$statistics_observed$mad_vec <- Moffitt_array_tosti_decon$statistics_observed$mad_vec[Moffitt_array_primary]
+Moffitt_array_tosti_decon$statistics_observed$rmsd_vec <- Moffitt_array_tosti_decon$statistics_observed$rmsd_vec[Moffitt_array_primary]
 Moffitt_array_meta$tumor_subtype <- rep(NA, nrow(Moffitt_array_meta))
 Moffitt_array_meta$tumor_subtype[Moffitt_array_meta$`tumor_subtype_0na_1classical_2basal:ch2` == "1"] <- "Classical" 
 Moffitt_array_meta$tumor_subtype[Moffitt_array_meta$`tumor_subtype_0na_1classical_2basal:ch2` == "2"] <- "Basal" 
-## exlude metastasis samples
-Moffitt_array_metastasis <- which(Moffitt_array_meta$`tissue type:ch2` == "Metastasis")
-Moffitt_array_bulk <- Moffitt_array_bulk[,-Moffitt_array_metastasis]
-Moffitt_array_meta <- Moffitt_array_meta[-Moffitt_array_metastasis,]
-Moffitt_array_baron_decon$p_value_per_sample <- Moffitt_array_baron_decon$p_value_per_sample[-Moffitt_array_metastasis,]
-Moffitt_array_baron_decon$decon_res$prop.est.mvw <- Moffitt_array_baron_decon$decon_res$prop.est.mvw[-Moffitt_array_metastasis,]
-Moffitt_array_baron_decon$statistics_observed$pearson_vec <- Moffitt_array_baron_decon$statistics_observed$pearson_vec[-Moffitt_array_metastasis]
-Moffitt_array_baron_decon$statistics_observed$spearman_vec <- Moffitt_array_baron_decon$statistics_observed$spearman_vec[-Moffitt_array_metastasis]
-Moffitt_array_baron_decon$statistics_observed$mad_vec <- Moffitt_array_baron_decon$statistics_observed$mad_vec[-Moffitt_array_metastasis]
-Moffitt_array_baron_decon$statistics_observed$rmsd_vec <- Moffitt_array_baron_decon$statistics_observed$rmsd_vec[-Moffitt_array_metastasis]
-Moffitt_array_tosti_decon$p_value_per_sample <- Moffitt_array_tosti_decon$p_value_per_sample[-Moffitt_array_metastasis,]
-Moffitt_array_tosti_decon$decon_res$prop.est.mvw <- Moffitt_array_tosti_decon$decon_res$prop.est.mvw[-Moffitt_array_metastasis,]
-Moffitt_array_tosti_decon$statistics_observed$pearson_vec <- Moffitt_array_tosti_decon$statistics_observed$pearson_vec[-Moffitt_array_metastasis]
-Moffitt_array_tosti_decon$statistics_observed$spearman_vec <- Moffitt_array_tosti_decon$statistics_observed$spearman_vec[-Moffitt_array_metastasis]
-Moffitt_array_tosti_decon$statistics_observed$mad_vec <- Moffitt_array_tosti_decon$statistics_observed$mad_vec[-Moffitt_array_metastasis]
-Moffitt_array_tosti_decon$statistics_observed$rmsd_vec <- Moffitt_array_tosti_decon$statistics_observed$rmsd_vec[-Moffitt_array_metastasis]
-
 
 ## visualization of results
 #baron_guo_heatmap_corr <- heatmap_corr_genes(decon_output = Guo_baron_decon, bulk_data = Guo_bulk,
@@ -89,17 +89,28 @@ Yang_signature_heatmap <- heatmap_corr_genes(bulk_data = Yang_bulk,
 #                                             clinical_characteristics = data.frame(Moffitt_array_meta$tumor_subtype,
 #                                                                                   row.names = rownames(Moffitt_array_meta)))
 tosti_moffitt_heatmap_corr <- heatmap_corr_genes(decon_output = Moffitt_array_tosti_decon, bulk_data = Moffitt_array_bulk,
-                                             clinical_characteristics = data.frame(Moffitt_array_meta$tumor_subtype,
-                                                                                   row.names = rownames(Moffitt_array_meta)))
+                                                 clinical_characteristics = data.frame("tumor_subtype" = Moffitt_array_meta$tumor_subtype,
+                                                                                       row.names = rownames(Moffitt_array_meta)),
+                                                 cell_types = c("mductal", "ductal", "racinar", "sacinar"))
 
 
 ## cell type prop
 #baron_Guo_prop_heatmap_prop <- heatmap_proportions(decon_output = Guo_baron_decon,
 #                                              clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description, row.names = rownames(Guo_meta)))
-tosti_Guo_prop_heatmap_prop <- heatmap_proportions(decon_output = Guo_tosti_decon,
-                                                   clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description, 
+annot_colors <- list(tumor_subtype = c(Basal = "#f683ad", Classical = "#f8fc88", Hybrid ="#6eacf2"),
+                     MKI67 = c(MKI67_low = "#77f387", MKI67_high = "#f19e5b"))
+guo_mki67 <- continuous_to_discrete(as.numeric(Guo_bulk["MKI67",]), "MKI67")
+tosti_Guo_prop_heatmap <- heatmap_proportions(decon_output = Guo_tosti_decon,
+                                                   clinical_characteristics = data.frame("tumor_subtype" = factor(Guo_meta$description),
+                                                                                         "MKI67" = factor(guo_mki67),
                                                                                          row.names = rownames(Guo_meta)),
-                                                   clustering_method = "complete")
+                                                   clustering_method = "complete", annotation_colors = annot_colors)
+tosti_Guo_prop_boxplot_subtype <- boxplot_proportions(decon_output = Guo_tosti_decon,
+                                              clinical_characteristics_vec = Guo_meta$description,
+                                              cell_types = c("sacinar", "racinar", "mductal"))
+tosti_Guo_prop_boxplot_mki67 <- boxplot_proportions(decon_output = Guo_tosti_decon,
+                                                      clinical_characteristics_vec = guo_mki67,
+                                                      cell_types = c("sacinar", "racinar", "mductal"))
 
 #baron_Guo_prop_bar <- barplot_proportions(decon_output = decon_baron$Guo,
 #                                          clinical_characteristics = Guo_meta$description)
@@ -108,10 +119,18 @@ tosti_Guo_prop_heatmap_prop <- heatmap_proportions(decon_output = Guo_tosti_deco
 
 #baron_Moffitt_array_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$Moffitt_array,
 #                                                        clinical_characteristics = data.frame("tumor_subtype" = Moffitt_array_meta$`tumor_subtype_0na_1classical_2basal:ch2`, row.names = rownames(Moffitt_array_meta)))
+moffitt_mki67 <- continuous_to_discrete(as.numeric(Moffitt_array_bulk["MKI67",]), "MKI67")
 tosti_Moffitt_array_prop_heatmap <- heatmap_proportions(decon_output = Moffitt_array_tosti_decon,
                                                         clinical_characteristics = data.frame("tumor_subtype" = Moffitt_array_meta$tumor_subtype, 
+                                                                                              "MKI67" = moffitt_mki67,
                                                                                               row.names = rownames(Moffitt_array_meta)),
                                                         clustering_method = "complete")
+tosti_moffitt_prop_boxplot_subtype <- boxplot_proportions(decon_output = Moffitt_array_tosti_decon,
+                                                          clinical_characteristics_vec = Moffitt_array_meta$tumor_subtype)
+#                                                      cell_types = c("sacinar", "racinar", "mductal"))
+tosti_moffitt_prop_boxplot_mki67 <- boxplot_proportions(decon_output = Moffitt_array_tosti_decon,
+                                                    clinical_characteristics_vec = moffitt_mki67)
+#                                                    cell_types = c("sacinar", "racinar", "mductal"))
 
 #baron_Moffitt_array_prop_bar <- barplot_proportions(decon_output = decon_baron$Moffitt_array,
 #                                                    clinical_characteristics = Moffitt_array_meta$`tumor_subtype_0na_1classical_2basal:ch2`)
@@ -163,11 +182,15 @@ baron_guo_correlation <- correlation_analysis(decon_output = Guo_baron_decon,
                                               clinical_characteristic = Guo_meta$description)
 tosti_guo_correlation <- correlation_analysis(decon_output = Guo_tosti_decon, 
                                               clinical_characteristic = Guo_meta$description)
+tosti_guo_correlation2 <- correlation_analysis(decon_output = Guo_tosti_decon, 
+                                              clinical_characteristic = guo_mki67)
 
 baron_moffitt_correlation <- correlation_analysis(decon_output = Moffitt_array_baron_decon, 
                                                   clinical_characteristic = Moffitt_array_meta$tumor_subtype)
 tosti_moffitt_correlation <- correlation_analysis(decon_output = Moffitt_array_tosti_decon, 
                                                   clinical_characteristic = Moffitt_array_meta$tumor_subtype)
+tosti_moffitt_correlation2 <- correlation_analysis(decon_output = Moffitt_array_tosti_decon, 
+                                                  clinical_characteristic = moffitt_mki67)
 
 
 ## ML analysis

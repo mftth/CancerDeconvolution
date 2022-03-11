@@ -39,6 +39,26 @@ barplot_proportions <- function(decon_output, clinical_characteristics_vec){
   return(barplot_proportions)
 }
 
+boxplot_proportions <- function(decon_output, clinical_characteristics_vec, cell_types = NULL){
+  # clinical_characteristics_vec is a character vector of length = nrow(decon_output$decon_res$prop.est.mvw)
+  if(!is.null(cell_types)){
+    decon_res <- decon_output$decon_res$prop.est.mvw[,cell_types]
+  } else {
+    decon_res <- decon_output$decon_res$prop.est.mvw
+  }
+  
+  decon_res_molten <- reshape2::melt(decon_res)
+  decon_res_molten <- cbind(decon_res_molten, rep(clinical_characteristics_vec, ncol(decon_res)))
+  colnames(decon_res_molten) <- c("sample", "cell_type", "value", "clinical_characteristic")
+  
+  boxplot_proportions <- ggplot(decon_res_molten, aes(x = clinical_characteristic,
+                                                      y = value, 
+                                                      fill = cell_type)) +
+    geom_boxplot() + ylab("cell type proportion")
+  
+  return(boxplot_proportions)
+}
+
 
 ## p-value plot
 boxplot_pvalue <- function(decon_output_list, pvalue_type = "spearman"){

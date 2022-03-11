@@ -413,24 +413,44 @@ hayashi_PAAD_meta$TCGA_ID <- hayashi_PAAD_meta$Tumor.Sample.ID
 hayashi_PAAD_meta$TCGA_ID <- gsub("-", ".", hayashi_PAAD_meta$TCGA_ID)
 hayashi_PAAD_meta$TCGA_ID <- sapply(hayashi_PAAD_meta$TCGA_ID, function(x) substr(x, 1, nchar(x)-4))
 rownames(hayashi_PAAD_meta) <- hayashi_PAAD_meta$TCGA_ID
-hayashi_idx <- match(rownames(PAAD_meta), rownames(hayashi_PAAD_meta))
-#hayashi_PAAD_meta$mRNA.Moffitt.clusters..All.150.Samples..1basal..2classical <- as.factor(hayashi_PAAD_meta$mRNA.Moffitt.clusters..All.150.Samples..1basal..2classical)
-hayashi_PAAD_meta$tumor_subtype <- hayashi_PAAD_meta$mRNA.Moffitt.clusters..All.150.Samples..1basal..2classical
+hayashi_idx <- match(rownames(PAAD_meta), rownames(hayashi_PAAD_meta))hayashi_PAAD_meta$tumor_subtype <- hayashi_PAAD_meta$mRNA.Moffitt.clusters..All.150.Samples..1basal..2classical
 hayashi_PAAD_meta$tumor_subtype[hayashi_PAAD_meta$tumor_subtype == 1] <- "Basal"
 hayashi_PAAD_meta$tumor_subtype[hayashi_PAAD_meta$tumor_subtype == 2] <- "Classical"
-PAAD_meta$tumor_subtype <- hayashi_PAAD_meta$tumor_subtype[hayashi_idx]
+hayashi_PAAD_meta$tumor_collisson <- hayashi_PAAD_meta$mRNA.Collisson.clusters..All.150.Samples..1classical.2exocrine.3QM
+hayashi_PAAD_meta$tumor_collisson[hayashi_PAAD_meta$tumor_collisson == 1] <- "Classical"
+hayashi_PAAD_meta$tumor_collisson[hayashi_PAAD_meta$tumor_collisson == 2] <- "Exocrine"
+hayashi_PAAD_meta$tumor_collisson[hayashi_PAAD_meta$tumor_collisson == 3] <- "QM"
+hayashi_PAAD_meta$tumor_bailey <- hayashi_PAAD_meta$mRNA.Bailey.Clusters..All.150.Samples..1squamous.2immunogenic.3progenitor.4ADEX
+hayashi_PAAD_meta$tumor_bailey[hayashi_PAAD_meta$tumor_bailey == 1] <- "Squamous"
+hayashi_PAAD_meta$tumor_bailey[hayashi_PAAD_meta$tumor_bailey == 2] <- "Immunogenic"
+hayashi_PAAD_meta$tumor_bailey[hayashi_PAAD_meta$tumor_bailey == 3] <- "Progenitor"
+hayashi_PAAD_meta$tumor_bailey[hayashi_PAAD_meta$tumor_bailey == 4] <- "ADEX"
 
+PAAD_meta$tumor_subtype <- hayashi_PAAD_meta$tumor_subtype[hayashi_idx]
+PAAD_meta$tumor_collisson <- hayashi_PAAD_meta$tumor_collisson[hayashi_idx]
+PAAD_meta$tumor_bailey <- hayashi_PAAD_meta$tumor_bailey[hayashi_idx]
+
+PAAD_mki67 <- continuous_to_discrete(PAAD_mki67_df$mki67, "MKI67")
+
+annot_colors <- list(collisson = c(Exocrine = "#f683ad", Classical = "#f8fc88", QM ="#6eacf2"),
+                     bailey = c(ADEX = "#77f387", Immunogenic = "#f19e5b", Progenitor ="#6eacf2", Squamous = "#f8fc88"))
 tosti_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti_surv$PAAD,
                                                clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade[-c(13, 17, 79, 100)],
-                                                                                     "tumor_subtype" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
+                                                                                     "moffitt" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
+                                                                                     "collisson" = PAAD_meta$tumor_collisson[-c(13, 17, 79, 100)],
+                                                                                     "bailey" = PAAD_meta$tumor_bailey[-c(13, 17, 79, 100)],
+                                                                                     "MKI67" = PAAD_mki67,
                                                                                      row.names = rownames(PAAD_meta)[-c(13, 17, 79, 100)]), 
-                                               clustering_method = "ward.D2")
+                                               clustering_method = "ward.D2", annotation_colors = annot_colors)
+
 
 tosti_PAAD_subtype_heatmap <- heatmap_corr_genes(decon_tosti$PAAD, cell_types = c("sacinar", "mductal"),
                                                  bulk_data = PAAD_bulk, 
                                                  clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade,
-                                                         "tumor_subtype" = PAAD_meta$tumor_subtype,
-                                                         row.names = rownames(PAAD_meta)),
+                                                                                       "moffitt" = PAAD_meta$tumor_subtype,
+                                                                                       "collisson" = PAAD_meta$tumor_collisson,
+                                                                                       "bailey" = PAAD_meta$tumor_bailey,
+                                                                                       row.names = rownames(PAAD_meta)),
                                                  marker_genes = c(basal_classical_signature$Basal, basal_classical_signature$Classical))
 # heatmap_label_order <- rownames(PAAD_meta)[tosti_PAAD_subtype_heatmap$tree_col$order]
 # which(heatmap_label_order == "TCGA.XD.AAUG") #79 until here all are classical
@@ -447,6 +467,8 @@ tosti_PAAD_subtype_heatmap <- heatmap_corr_genes(decon_tosti$PAAD, cell_types = 
 tosti_PAAD_correlation3 <- correlation_analysis(decon_output = decon_tosti$PAAD, clinical_characteristic = PAAD_meta$tumor_subtype)
 tosti_PAAD_survival2 <- survival_analysis(decon_output = decon_tosti_surv$PAAD, OS = PAAD_OS, censor = PAAD_censor, 
                                           clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade[-c(13, 17, 79, 100)], 
-                                                                                 "mki67" = as.numeric(PAAD_bulk["MKI67",])[-c(13, 17, 79, 100)],
-                                                                                 "tumor_subtype" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
+                                                                                 "moffitt" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
+                                                                                 "collisson" = PAAD_meta$tumor_collisson[-c(13, 17, 79, 100)],
+                                                                                 "bailey" = PAAD_meta$tumor_bailey[-c(13, 17, 79, 100)],
+                                                                                 "MKI67" = PAAD_mki67,
                                                                                  row.names = rownames(PAAD_meta)[-c(13, 17, 79, 100)]))
