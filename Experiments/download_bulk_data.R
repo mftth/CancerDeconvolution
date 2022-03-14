@@ -230,3 +230,39 @@ saveRDS(janky, file = "~/Masterthesis/Data/Bulk/Janky/Janky_bulk.RDS")
 write.table(janky_meta, file = "~/Masterthesis/Data/Bulk/Janky/Janky_metadata.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
 saveRDS(janky_meta, file = "~/Masterthesis/Data/Bulk/Janky/Janky_metadata.RDS")
+
+
+## Flowers
+flowers_obj <- getGEO(filename = "~/Masterthesis/Data/Bulk/Flowers/GSE164180_series_matrix.txt")
+flowers_meta <- flowers_obj@phenoData@data
+flowers_meta$mouse_ID <- unname(sapply(flowers_meta$title, function(x) strsplit(x, split = ":")[[1]][1]))
+flowers <- read.table("~/Masterthesis/Data/Bulk/Flowers/GSE164180_Flowers_Counts.txt", header = TRUE, row.names = 1, sep = "\t")
+flowers_genes <- sapply(unique(flowers$Gene.Name), function(x) get_max_var_genes(flowers[,-1], 
+                                                                                 gene = x, genes = flowers$Gene.Name))
+flowers <- flowers[flowers_genes,]
+rownames(flowers) <- flowers$Gene.Name
+flowers <- flowers[,-1]
+flowers_suppl1 <- read_excel("~/Masterthesis/Data/Bulk/Flowers/suppl1_acinar.xlsx", skip = 1)
+flowers_suppl2 <- read_excel("~/Masterthesis/Data/Bulk/Flowers/suppl2_acinar.xlsx", skip = 1)
+flowers_suppl3 <- read_excel("~/Masterthesis/Data/Bulk/Flowers/suppl3_ductal.xlsx", skip = 1)
+flowers_suppl3$'Liver metastasis' <- rep(NA, nrow(flowers_suppl3))
+all(colnames(flowers_suppl1) == colnames(flowers_suppl3))
+all(colnames(flowers_suppl1) == colnames(flowers_suppl2))
+flowers_suppl <- rbind(flowers_suppl1, flowers_suppl2)
+flowers_suppl <- rbind(flowers_suppl, flowers_suppl3)
+flowers_suppl_reduced <- flowers_suppl[match(flowers_meta$mouse_ID, flowers_suppl$`Mouse ID `), ]
+flowers_meta$primary_tumor_grade <- flowers_suppl_reduced$`Primary Tumor Grade`
+write.table(flowers, file = "~/Masterthesis/Data/Bulk/Flowers/Flowers_bulk.tsv",
+            sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
+saveRDS(flowers, file = "~/Masterthesis/Data/Bulk/Flowers/Flowers_bulk.RDS")
+write.table(flowers_meta, file = "~/Masterthesis/Data/Bulk/Flowers/Flowers_metadata.tsv",
+            sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
+saveRDS(flowers_meta, file = "~/Masterthesis/Data/Bulk/Flowers/Flowers_metadata.RDS")
+
+
+## Bailey
+bailey_obj <- getGEO(filename = "~/Masterthesis/Data/Bulk/Bailey/GSE36924_series_matrix.txt")
+bailey_meta <- bailey_obj@phenoData@data
+bailey <- bailey_obj@assayData$exprs # need to convert gene names
+#bailey <- read.table("~/Masterthesis/Data/Bulk/Bailey/GSE36924_non_normalized.txt", header = TRUE, row.names = 1, sep = "\t")
+## tumor subtype in suppl table 14, sheet 1

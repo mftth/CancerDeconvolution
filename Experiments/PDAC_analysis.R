@@ -163,9 +163,9 @@ Moffitt_survival <- Moffitt_survival[!Moffitt_survival_NA,]
 baron_guo_survival <- survival_analysis(decon_output = guo_baron_decon_surv, OS = Guo_OS, censor = Guo_Zensur, 
                                         clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description[-guo_hybrid], 
                                                                               row.names = rownames(Guo_meta)[-guo_hybrid]))
-tosti_guo_survival <- survival_analysis(decon_output = guo_tosti_decon_surv, OS = Guo_OS, censor = Guo_Zensur, 
-                                        clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description[-guo_hybrid], 
-                                                                              row.names = rownames(Guo_meta)[-guo_hybrid]))
+tosti_guo_survival <- survival_analysis(decon_output = Guo_tosti_decon, OS = Guo_OS, censor = Guo_Zensur, 
+                                        clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description, 
+                                                                              row.names = rownames(Guo_meta)))
 
 baron_moffitt_survival <- survival_analysis(decon_output = Moffitt_baron_decon_surv, OS = Moffitt_survival$OS, 
                                             censor = Moffitt_survival$censor, 

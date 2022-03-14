@@ -433,7 +433,10 @@ PAAD_meta$tumor_bailey <- hayashi_PAAD_meta$tumor_bailey[hayashi_idx]
 PAAD_mki67 <- continuous_to_discrete(PAAD_mki67_df$mki67, "MKI67")
 
 annot_colors <- list(collisson = c(Exocrine = "#f683ad", Classical = "#f8fc88", QM ="#6eacf2"),
-                     bailey = c(ADEX = "#77f387", Immunogenic = "#f19e5b", Progenitor ="#6eacf2", Squamous = "#f8fc88"))
+                     bailey = c(ADEX = "#77f387", Immunogenic = "#f19e5b", Progenitor ="#6eacf2", Squamous = "#f8fc88"),
+                     moffitt = c(Basal = "#77f387", Classical = "#f19e5b"),
+                     grading = c(g1 = "#f683ad", g2 = "#77f387", g3 = "#6eacf2"),
+                     MKI67 = c(MKI67_high = "#f683ad", MKI67_low = "#6eacf2")) 
 tosti_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti_surv$PAAD,
                                                clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade[-c(13, 17, 79, 100)],
                                                                                      "moffitt" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
@@ -465,6 +468,8 @@ tosti_PAAD_subtype_heatmap <- heatmap_corr_genes(decon_tosti$PAAD, cell_types = 
 # PAAD_meta$tumor_subtype2 <- heatmap_label_order_type
 
 tosti_PAAD_correlation3 <- correlation_analysis(decon_output = decon_tosti$PAAD, clinical_characteristic = PAAD_meta$tumor_subtype)
+tosti_PAAD_correlation4 <- correlation_analysis(decon_output = decon_tosti$PAAD, clinical_characteristic = PAAD_meta$tumor_collisson)
+tosti_PAAD_correlation4 <- correlation_analysis(decon_output = decon_tosti$PAAD, clinical_characteristic = PAAD_meta$tumor_bailey)
 tosti_PAAD_survival2 <- survival_analysis(decon_output = decon_tosti_surv$PAAD, OS = PAAD_OS, censor = PAAD_censor, 
                                           clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade[-c(13, 17, 79, 100)], 
                                                                                  "moffitt" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
