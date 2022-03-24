@@ -431,18 +431,23 @@ PAAD_meta$tumor_collisson <- hayashi_PAAD_meta$tumor_collisson[hayashi_idx]
 PAAD_meta$tumor_bailey <- hayashi_PAAD_meta$tumor_bailey[hayashi_idx]
 
 PAAD_mki67 <- continuous_to_discrete(PAAD_mki67_df$mki67, "MKI67")
+PAAD_mki67_thirds <- quantile(PAAD_mki67_df$mki67, probs = seq(0, 1, 1/3))
+PAAD_mki67.2 <- as.numeric(PAAD_mki67_df$mki67)
+PAAD_mki67.2[sapply(as.numeric(PAAD_mki67_df$mki67), function(x) x <= PAAD_mki67_thirds[2])] <- "MKI67_low"
+PAAD_mki67.2[sapply(as.numeric(PAAD_mki67_df$mki67), function(x) x > PAAD_mki67_thirds[2] && x <= PAAD_mki67_thirds[3])] <- "MKI67_medium"
+PAAD_mki67.2[sapply(as.numeric(PAAD_mki67_df$mki67), function(x) x > PAAD_mki67_thirds[3])] <- "MKI67_high"
 
 annot_colors <- list(collisson = c(Exocrine = "#f683ad", Classical = "#f8fc88", QM ="#6eacf2"),
                      bailey = c(ADEX = "#77f387", Immunogenic = "#f19e5b", Progenitor ="#6eacf2", Squamous = "#f8fc88"),
                      moffitt = c(Basal = "#77f387", Classical = "#f19e5b"),
                      grading = c(g1 = "#f683ad", g2 = "#77f387", g3 = "#6eacf2"),
-                     MKI67 = c(MKI67_high = "#f683ad", MKI67_low = "#6eacf2")) 
+                     MKI67 = c(MKI67_low = "#77f387", MKI67_medium ="#f19e5b",MKI67_high = "#d34545")) 
 tosti_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti_surv$PAAD,
                                                clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade[-c(13, 17, 79, 100)],
                                                                                      "moffitt" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
                                                                                      "collisson" = PAAD_meta$tumor_collisson[-c(13, 17, 79, 100)],
                                                                                      "bailey" = PAAD_meta$tumor_bailey[-c(13, 17, 79, 100)],
-                                                                                     "MKI67" = PAAD_mki67,
+                                                                                     "MKI67" = PAAD_mki67.2,
                                                                                      row.names = rownames(PAAD_meta)[-c(13, 17, 79, 100)]), 
                                                clustering_method = "ward.D2", annotation_colors = annot_colors)
 
@@ -475,5 +480,5 @@ tosti_PAAD_survival2 <- survival_analysis(decon_output = decon_tosti_surv$PAAD, 
                                                                                  "moffitt" = PAAD_meta$tumor_subtype[-c(13, 17, 79, 100)],
                                                                                  "collisson" = PAAD_meta$tumor_collisson[-c(13, 17, 79, 100)],
                                                                                  "bailey" = PAAD_meta$tumor_bailey[-c(13, 17, 79, 100)],
-                                                                                 "MKI67" = PAAD_mki67,
+                                                                                 "MKI67" = PAAD_mki67.2,
                                                                                  row.names = rownames(PAAD_meta)[-c(13, 17, 79, 100)]))

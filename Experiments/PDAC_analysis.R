@@ -98,19 +98,27 @@ tosti_moffitt_heatmap_corr <- heatmap_corr_genes(decon_output = Moffitt_array_to
 #baron_Guo_prop_heatmap_prop <- heatmap_proportions(decon_output = Guo_baron_decon,
 #                                              clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description, row.names = rownames(Guo_meta)))
 annot_colors <- list(tumor_subtype = c(Basal = "#f683ad", Classical = "#f8fc88", Hybrid ="#6eacf2"),
-                     MKI67 = c(MKI67_low = "#77f387", MKI67_high = "#f19e5b"))
+                     MKI67 = c(MKI67_low = "#77f387",  MKI67_medium = "#f19e5b", MKI67_high = "#d34545"))
 guo_mki67 <- continuous_to_discrete(as.numeric(Guo_bulk["MKI67",]), "MKI67")
+guo_mki67_thirds <- quantile(Guo_bulk["MKI67",], probs = seq(0, 1, 1/3))
+guo_mki67.2 <- as.numeric(Guo_bulk["MKI67",])
+guo_mki67.2[sapply(as.numeric(Guo_bulk["MKI67",]), function(x) x <= guo_mki67_thirds[2])] <- "MKI67_low"
+guo_mki67.2[sapply(as.numeric(Guo_bulk["MKI67",]), function(x) x > guo_mki67_thirds[2] && x <= guo_mki67_thirds[3])] <- "MKI67_medium"
+guo_mki67.2[sapply(as.numeric(Guo_bulk["MKI67",]), function(x) x > guo_mki67_thirds[3])] <- "MKI67_high"
+
 tosti_Guo_prop_heatmap <- heatmap_proportions(decon_output = Guo_tosti_decon,
-                                                   clinical_characteristics = data.frame("tumor_subtype" = factor(Guo_meta$description),
-                                                                                         "MKI67" = factor(guo_mki67),
-                                                                                         row.names = rownames(Guo_meta)),
-                                                   clustering_method = "complete", annotation_colors = annot_colors)
+                                              clinical_characteristics = data.frame("tumor_subtype" = factor(Guo_meta$description),
+                                                                                    "MKI67" = factor(guo_mki67.2),
+                                                                                    row.names = rownames(Guo_meta)),
+                                              clustering_method = "complete", annotation_colors = annot_colors)
+
 tosti_Guo_prop_boxplot_subtype <- boxplot_proportions(decon_output = Guo_tosti_decon,
                                               clinical_characteristics_vec = Guo_meta$description,
                                               cell_types = c("sacinar", "racinar", "mductal"))
 tosti_Guo_prop_boxplot_mki67 <- boxplot_proportions(decon_output = Guo_tosti_decon,
-                                                      clinical_characteristics_vec = guo_mki67,
-                                                      cell_types = c("sacinar", "racinar", "mductal"))
+                                                    clinical_characteristics_vec = factor(guo_mki67.2, 
+                                                                                          levels = c("MKI67_low", "MKI67_medium", "MKI67_high")),
+                                                    cell_types = c("sacinar", "racinar", "mductal"))
 
 #baron_Guo_prop_bar <- barplot_proportions(decon_output = decon_baron$Guo,
 #                                          clinical_characteristics = Guo_meta$description)
@@ -164,7 +172,8 @@ baron_guo_survival <- survival_analysis(decon_output = guo_baron_decon_surv, OS 
                                         clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description[-guo_hybrid], 
                                                                               row.names = rownames(Guo_meta)[-guo_hybrid]))
 tosti_guo_survival <- survival_analysis(decon_output = Guo_tosti_decon, OS = Guo_OS, censor = Guo_Zensur, 
-                                        clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description, 
+                                        clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
+                                                                              "MKI67" = guo_mki67.2,
                                                                               row.names = rownames(Guo_meta)))
 
 baron_moffitt_survival <- survival_analysis(decon_output = Moffitt_baron_decon_surv, OS = Moffitt_survival$OS, 
@@ -183,7 +192,7 @@ baron_guo_correlation <- correlation_analysis(decon_output = Guo_baron_decon,
 tosti_guo_correlation <- correlation_analysis(decon_output = Guo_tosti_decon, 
                                               clinical_characteristic = Guo_meta$description)
 tosti_guo_correlation2 <- correlation_analysis(decon_output = Guo_tosti_decon, 
-                                              clinical_characteristic = guo_mki67)
+                                              clinical_characteristic = guo_mki67.2)
 
 baron_moffitt_correlation <- correlation_analysis(decon_output = Moffitt_array_baron_decon, 
                                                   clinical_characteristic = Moffitt_array_meta$tumor_subtype)
