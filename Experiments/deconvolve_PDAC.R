@@ -413,7 +413,8 @@ hayashi_PAAD_meta$TCGA_ID <- hayashi_PAAD_meta$Tumor.Sample.ID
 hayashi_PAAD_meta$TCGA_ID <- gsub("-", ".", hayashi_PAAD_meta$TCGA_ID)
 hayashi_PAAD_meta$TCGA_ID <- sapply(hayashi_PAAD_meta$TCGA_ID, function(x) substr(x, 1, nchar(x)-4))
 rownames(hayashi_PAAD_meta) <- hayashi_PAAD_meta$TCGA_ID
-hayashi_idx <- match(rownames(PAAD_meta), rownames(hayashi_PAAD_meta))hayashi_PAAD_meta$tumor_subtype <- hayashi_PAAD_meta$mRNA.Moffitt.clusters..All.150.Samples..1basal..2classical
+hayashi_idx <- match(rownames(PAAD_meta), rownames(hayashi_PAAD_meta))
+hayashi_PAAD_meta$tumor_subtype <- hayashi_PAAD_meta$mRNA.Moffitt.clusters..All.150.Samples..1basal..2classical
 hayashi_PAAD_meta$tumor_subtype[hayashi_PAAD_meta$tumor_subtype == 1] <- "Basal"
 hayashi_PAAD_meta$tumor_subtype[hayashi_PAAD_meta$tumor_subtype == 2] <- "Classical"
 hayashi_PAAD_meta$tumor_collisson <- hayashi_PAAD_meta$mRNA.Collisson.clusters..All.150.Samples..1classical.2exocrine.3QM

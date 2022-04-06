@@ -17,23 +17,29 @@ source("~/SCDC/SCDC/R/ENSEMBLE.R")
 library(parallel)
 library(robustbase)
 
-calc_ens_res <- function(ensemble_output){
-  
-  ensemble_res <- list()
-  weights <- ensemble_output$w_table[1, 1:(ncol(ensemble_output$w_table)-4)] # take measure inverse_SSE as recommended by Dong et al --> hard coded
-  prop_list <- lapply(ensemble_output$prop.list, function(x) x$prop.est.mvw)
-  ensemble_res$prop.est.mvw <- wt_prop(weights, prop_list)
-  
-  basis_list <- lapply(ensemble_output$prop.list, function(x) x$basis.mvw)
-  basistmp <- lapply(1:length(basis_list), function(x) basis_list[[x]]*weights[x])
-  common_genes <- Reduce(intersect, lapply(basistmp, function(x) rownames(x)))
-  basistmp <- lapply(basistmp, function(x) x[common_genes,])
-  ensemble_res$basis.mvw <- Reduce("+", basistmp)
-  
-  return(ensemble_res)
-  
-}
+# calc_ens_res <- function(ensemble_output){
+#   
+#   ensemble_res <- list()
+#   weights <- ensemble_output$w_table[1, 1:(ncol(ensemble_output$w_table)-4)] # take measure inverse_SSE as recommended by Dong et al --> hard coded
+#   prop_list <- lapply(ensemble_output$prop.list, function(x) x$prop.est.mvw)
+#   ensemble_res$prop.est.mvw <- wt_prop(weights, prop_list)
+#   
+#   basis_list <- lapply(ensemble_output$prop.list, function(x) x$basis.mvw)
+#   basistmp <- lapply(1:length(basis_list), function(x) basis_list[[x]]*weights[x])
+#   common_genes <- Reduce(intersect, lapply(basistmp, function(x) rownames(x)))
+#   basistmp <- lapply(basistmp, function(x) x[common_genes,])
+#   ensemble_res$basis.mvw <- Reduce("+", basistmp)
+#   
+#   return(ensemble_res)
+#   
+# }
 
+# write utility function that calcs the ensemble prediction with highest mean weight
+get_ensemble_res <- function(ensemble_output){
+  weights <- ensemble_output$w_table[1:5, 1:(ncol(ensemble_output$w_table)-4)]
+  ensemble_res <- ensemble_output$prop.list[[which.max(colMeans(weights))]]
+  return(ensemble_res)
+}
 
 Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types, ensemble, multiple_donors, ...) { 
 
@@ -66,7 +72,8 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
       decon_res <- SCDC_ENSEMBLE(bulk.eset = bulk_eset, sc.eset.list = sc_data, sc.basis.list = sc_basis,
                                  ct.varname = "cluster", sample = "sample", ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht -> make it soft coded
                                  ct.sub =  cell_types, ...) 
-      decon_res <- calc_ens_res(ensemble_output =  decon_res)
+      #decon_res <- calc_ens_res(ensemble_output =  decon_res)
+      decon_res <- get_ensemble_res(ensemble_output =  decon_res)
       message("Done.")
       
     }

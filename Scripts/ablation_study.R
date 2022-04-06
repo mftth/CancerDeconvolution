@@ -19,6 +19,9 @@ ablation_study <- function(ct_combi_list = NULL, ct_set = NULL, sub_ct_set = NUL
   ## remaining input of Calculate_pvalue() except for cell_types
   ## clinical char should be a dataframe containing one or more clinical variables of interest 
   ## a.k.a. meta data of the bulk RNA-seq samples 
+  ## ct_combi_list is a set of cell type subsets for which the ablation study should be performed
+  ## ct_set is a set of cell types which should be part of each subset for which the ablation study should be performed
+  ## sub_ct_set is a set of cell types of which the power set is computed such that for each subset the ablation study should be performed
   
   if (is.null(ct_combi_list) && is.null(ct_set) && is.null(sub_ct_set)){
     stop("Either provide a set of cell types to be investigated or the combinations of cell types of interest!")
