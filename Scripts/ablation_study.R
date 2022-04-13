@@ -225,7 +225,7 @@ ablation_study <- function(ct_combi_list = NULL, ct_set = NULL, sub_ct_set = NUL
                             list("max_median_pearson" = pearson_max_median,
                                  "max_median_spearman" = spearman_max_median,
                                  "min_median_mad" = mad_min_median,
-                                 "min_medianl_rmsd" = rmsd_min_median)
+                                 "min_median_rmsd" = rmsd_min_median)
                           )
   return(ablation_result)
 }

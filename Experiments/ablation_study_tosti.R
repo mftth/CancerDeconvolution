@@ -48,33 +48,18 @@ ct_set <- c("alpha", "beta", "gamma", "delta")
 sub_ct_set <- c("sacinar", "racinar", "iacinar", "ductal", "mductal")
 
 tosti_guo_ablation <- ablation_study(ct_combi_list = NULL, ct_set = ct_set, sub_ct_set = sub_ct_set, 
-                                     res_path = "~/Masterthesis/CancerDeconvolution/Results/tosti_ablation_study", 
+                                     res_path = "~/Masterthesis/CancerDeconvolution/Results/tosti_ablation_study_guo", 
                                      clinical_char = Guo_clinical_char, 
                                      bulk_data = Guo_bulk, bulk_meta = Guo_meta, 
                                      sc_data = qc_tosti_sc$sc.eset.qc, ensemble = FALSE, 
                                      multiple_donors = TRUE, nrep = 1000, ncores = 15)
 
 tosti_paad_ablation <- ablation_study(ct_combi_list = NULL, ct_set = ct_set, sub_ct_set = sub_ct_set, 
-                                      #res_path = "~/Masterthesis/CancerDeconvolution/Results/tosti_ablation_study", 
+                                      res_path = "~/Masterthesis/CancerDeconvolution/Results/tosti_ablation_study_paad", 
                                       clinical_char = PAAD_clinical_char, 
                                       bulk_data = PAAD_bulk, bulk_meta = PAAD_meta, 
                                       sc_data = qc_tosti_sc$sc.eset.qc, ensemble = FALSE, 
                                       multiple_donors = TRUE, nrep = 1000, ncores = 15)
 
 save.image("~/Masterthesis/Workspaces/ablation_study_tosti.RData")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
