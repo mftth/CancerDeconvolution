@@ -1,12 +1,7 @@
 ## Mastherthesis, Melanie Fattohi
 ## scRNA-seq data by Tosti, Baron
 ## Deconvolve Flowers and Bailey
-## alle bulks reinladen
-## alle sc reinladen (entweder als table oder schon qc'ed by SCDC)
-## alle bulks in eine liste speichern
-## mit lapply compute_pvalue ausfuehren
 ## nreps = 1000, ncores = 15
-## ergebnisse pro dataset darstellen
 ## survival analysis
 ## correlation analysis
 ## ML anaylsis

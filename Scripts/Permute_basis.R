@@ -183,13 +183,17 @@ get_permuted_basis_statistics <- function(marker_genes, bulk_data, bulk_meta, sc
   
   if(!ensemble){
     sc_basis <- list(sc_basis)
-    marker_genes <- list(marker_genes)
   } ## if ensemble TRUE, dann muss sc_basis eine liste von den basen jeder sc reference sein
-  
-  marker_genes_idx <- lapply(1:length(sc_basis), function(x) match(marker_genes[[x]]$marker_genes, 
-                                                                   rownames(sc_basis[[x]]$basis.mvw)))
-  sampled_marker_genes <- lapply(1:length(sc_basis), function(x) sample(marker_genes[[x]]$marker_genes))
-  sc_basis_sampled <- sc_basis
+    
+    marker_genes_idx <- lapply(1:length(sc_basis), function(x) match(marker_genes$marker_genes, 
+                                                                     rownames(sc_basis[[x]]$basis.mvw)))
+    unpresent_marker_genes <- Reduce(union, lapply(marker_genes_idx, function(x) which(is.na(x))))
+    marker_genes$marker_genes <- marker_genes$marker_genes[-unpresent_marker_genes]
+    marker_genes_idx <- lapply(1:length(sc_basis), function(x) match(marker_genes$marker_genes, 
+                                                                     rownames(sc_basis[[x]]$basis.mvw)))
+
+    sampled_marker_genes <- lapply(1:length(sc_basis), function(x) sample(marker_genes$marker_genes))
+    sc_basis_sampled <- sc_basis
   
   
   for (idx in 1:length(sc_basis)) {

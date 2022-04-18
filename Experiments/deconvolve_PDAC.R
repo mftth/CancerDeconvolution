@@ -2,17 +2,10 @@
 ## scRNA-seq data by Tosti, Baron
 ## scRNA-seq von PDAC werden noch gesucht
 ## Deconvolve Yang, PAAD, Moffitt (Seq + array), Guo, Kirby, Janky
-## alle bulks reinladen
-## alle sc reinladen (entweder als table oder schon qc'ed by SCDC)
-## alle bulks in eine liste speichern
-## mit lapply compute_pvalue ausfuehren
 ## nreps = 1000, ncores = 15
-## ergebnisse pro dataset darstellen
 ## survival analysis
 ## correlation analysis
 ## ML anaylsis
-## vllt iwas mit basal, classical und hybrid type
-## ecotyper zeugs?
 
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 source("~/Masterthesis/CancerDeconvolution/Scripts/visualization.R")
@@ -32,16 +25,16 @@ Yang_meta <- readRDS("~/Masterthesis/Data/Bulk/Yang/Yang_metadata.RDS")
 Guo_bulk <- readRDS("~/Masterthesis/Data/Bulk/Guo/Guo_bulk.RDS")
 Guo_meta <- readRDS("~/Masterthesis/Data/Bulk/Guo/Guo_metadata.RDS")
 ## 131 samples; microarray
-Janky_bulk <- readRDS("~/Masterthesis/Data/Bulk/Janky/Janky_bulk.RDS")
-Janky_meta <- readRDS("~/Masterthesis/Data/Bulk/Janky/Janky_metadata.RDS")
-## 51 samples; survival; RNA-seq
-Kirby_bulk <- readRDS("~/Masterthesis/Data/Bulk/Kirby/Kirby_bulk.RDS")
-Kirby_meta <- readRDS("~/Masterthesis/Data/Bulk/Kirby/Kirby_metadata.RDS")
+# Janky_bulk <- readRDS("~/Masterthesis/Data/Bulk/Janky/Janky_bulk.RDS")
+# Janky_meta <- readRDS("~/Masterthesis/Data/Bulk/Janky/Janky_metadata.RDS")
+# ## 51 samples; survival; RNA-seq
+# Kirby_bulk <- readRDS("~/Masterthesis/Data/Bulk/Kirby/Kirby_bulk.RDS")
+# Kirby_meta <- readRDS("~/Masterthesis/Data/Bulk/Kirby/Kirby_metadata.RDS")
 ## 61 samples; RNA-seq
 ## 15 primary tumors, 37 pancreatic cancer patient-derived xenografts (PDXs), 
 ## 3 PDAC cell lines and 6 cancer-associated fibroblast (CAF)
-Moffitt_seq_bulk <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_seq_bulk.RDS")
-Moffitt_seq_meta <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_seq_metadata.RDS")
+# Moffitt_seq_bulk <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_seq_bulk.RDS")
+# Moffitt_seq_meta <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_seq_metadata.RDS")
 ## 357 samples; survival; tumor subtype; microarray
 Moffitt_array_bulk <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_array_bulk.RDS")
 Moffitt_array_meta <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_array_metadata.RDS")
@@ -49,23 +42,28 @@ Moffitt_array_meta <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_array_m
 bulk_list <- list("PAAD" = PAAD_bulk,
                   "Yang" = Yang_bulk,
                   "Guo" = Guo_bulk,
-                  "Janky" = Janky_bulk,
-                  "Kirby" = Kirby_bulk,
-                  "Moffitt_seq" = Moffitt_seq_bulk,
-                  "Moffitt_array" = Moffitt_array_bulk)
+                  #"Janky" = Janky_bulk,
+                  #"Kirby" = Kirby_bulk,
+                  #"Moffitt_seq" = Moffitt_seq_bulk,
+                  "Moffitt_array" = Moffitt_array_bulk,
+                  "Flowers" = Flowers_bulk)
 bulk_meta_list <- list("PAAD" = PAAD_meta,
                        "Yang" = Yang_meta,
                        "Guo" = Guo_meta,
-                       "Janky" = Janky_meta,
-                       "Kirby" = Kirby_meta,
-                       "Moffitt_seq" = Moffitt_seq_meta,
-                       "Moffitt_array" = Moffitt_array_meta)
+                       #"Janky" = Janky_meta,
+                       #"Kirby" = Kirby_meta,
+                       #"Moffitt_seq" = Moffitt_seq_meta,
+                       "Moffitt_array" = Moffitt_array_meta,
+                       "Flowers" = Flowers_meta)
 
 ## single-cell RNA-seq datasets
 qc_baron_sc <- readRDS(file = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/qc_baron_exo.RDS")
 qc_segerstolpe_sc <- readRDS(file = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/Segerstolpe_qc_exo.RDS")
 qc_lawlor_sc <- readRDS(file = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/Lawlor_qc_exo.RDS")
 qc_tosti_sc <- readRDS(file = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/qc_tosti.RDS")
+sc_list <- list("Baron" = qc_baron_sc$sc.eset.qc, 
+                "Segerstolpe" = qc_segerstolpe_sc$sc.eset.qc, 
+                "Lawlor" = qc_lawlor_sc$sc.eset.qc)
 
 ## perform deconvolution
 reps <- 1000
@@ -104,6 +102,21 @@ decon_tosti <- lapply(1:length(bulk_list),
 names(decon_tosti) <- names(bulk_list)
 ###
 ###
+res_path_ensemble <- "~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Ensemble"
+decon_ensemble <- lapply(1:length(bulk_list), function(x) {
+  decon_ensemble_x <- Calculate_pvalue(nrep = reps, ncores = ncores, silent = FALSE, 
+                                    bulk_data = bulk_list[[x]], bulk_meta = bulk_meta_list[[x]],
+                                    sc_data = sc_list, cell_types = cts,
+                                    ensemble = TRUE, multiple_donors = c(TRUE, TRUE, FALSE))
+  saveRDS(decon_ensemble_x, file = paste(res_path_ensemble, "/", names(bulk_list)[x], "_decon.RDS", sep = ""))
+})
+
+decon_ensemble <- lapply(1:length(bulk_list), 
+                      function(x) readRDS(file = paste(res_path_ensemble, "/", names(bulk_list)[x], 
+                                                       "_decon.RDS", sep = "")))
+names(decon_ensemble) <- names(bulk_list)
+###
+###
 ## remove cell line samples from Moffitseq
 all(rownames(decon_baron$Moffitt_seq$p_value_per_sample) == rownames(Moffitt_seq_meta))
 all(rownames(decon_baron$Moffitt_seq$decon_res$prop.est.mvw) == rownames(Moffitt_seq_meta))
@@ -116,38 +129,41 @@ decon_tosti$Moffitt_seq$p_value_per_sample <- decon_tosti$Moffitt_seq$p_value_pe
 decon_tosti$Moffitt_seq$decon_res$prop.est.mvw <- decon_tosti$Moffitt_seq$decon_res$prop.est.mvw[Moffitt_seq_primary,]
 
 
+technology = c("RNA-seq", "microarray", "RNA-seq", "microarray", "RNA-seq")
 baron_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_baron,
-                                              pvalue_type = "spearman") + ggtitle("Reference: Baron et al.") 
+                                              pvalue_type = "Spearman", technology = technology) + ggtitle("Reference: Baron et al.") 
 tosti_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_tosti,
-                                              pvalue_type = "spearman") + ggtitle("Reference: Tosti et al.")
-ggarrange(baron_pval_boxplot_spearman, tosti_pval_boxplot_spearman) 
+                                              pvalue_type = "Spearman", technology = technology) + ggtitle("Reference: Tosti et al.")
+ggarrange(baron_pval_boxplot_spearman, tosti_pval_boxplot_spearman, common.legend = TRUE) 
 
 baron_pval_boxplot_pearson <- boxplot_pvalue(decon_output_list = decon_baron,
-                                              pvalue_type = "pearson") + ggtitle("Reference: Baron et al.")
+                                              pvalue_type = "Pearson", technology = technology) + ggtitle("Reference: Baron et al.")
 tosti_pval_boxplot_pearson <- boxplot_pvalue(decon_output_list = decon_tosti,
-                                              pvalue_type = "pearson") + ggtitle("Reference: Tosti et al.")
-ggarrange(baron_pval_boxplot_pearson, tosti_pval_boxplot_pearson)
+                                              pvalue_type = "Pearson", technology = technology) + ggtitle("Reference: Tosti et al.")
+ggarrange(baron_pval_boxplot_pearson, tosti_pval_boxplot_pearson, common.legend = TRUE)
 
 baron_pval_boxplot_mad <- boxplot_pvalue(decon_output_list = decon_baron,
-                                              pvalue_type = "mad") + ggtitle("Reference: Baron et al.")
+                                              pvalue_type = "mAD", technology = technology) + ggtitle("Reference: Baron et al.")
 tosti_pval_boxplot_mad <- boxplot_pvalue(decon_output_list = decon_tosti,
-                                              pvalue_type = "mad") + ggtitle("Reference: Tosti et al.")
-ggarrange(baron_pval_boxplot_mad, tosti_pval_boxplot_mad)
+                                              pvalue_type = "mAD", technology = technology) + ggtitle("Reference: Tosti et al.")
+ggarrange(baron_pval_boxplot_mad, tosti_pval_boxplot_mad, common.legend = TRUE)
 
 baron_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_baron,
-                                         pvalue_type = "rmsd") + ggtitle("Reference: Baron et al.")
+                                         pvalue_type = "RMSD", technology = technology) + 
+                           ggtitle("Reference: Baron et al.")
 tosti_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_tosti,
-                                         pvalue_type = "rmsd") + ggtitle("Reference: Tosti et al.")
-ggarrange(baron_pval_boxplot_rmsd, tosti_pval_boxplot_rmsd) 
+                                         pvalue_type = "RMSD", technology = technology) + 
+                           ggtitle("Reference: Tosti et al.")
+ggarrange(baron_pval_boxplot_rmsd, tosti_pval_boxplot_rmsd, common.legend = TRUE) 
 
 ## grading
 baron_yang_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$Yang,
                                                clinical_characteristics = data.frame("grading" = Yang_meta$`grading:ch1`, 
-                                                                                     stage = Yang_meta$`Stage:ch1`, 
+                                                                                     #stage = Yang_meta$`Stage:ch1`, 
                                                                                      row.names = rownames(Yang_meta)))
 tosti_yang_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Yang,
                                                clinical_characteristics = data.frame("grading" = Yang_meta$`grading:ch1`, 
-                                                                                     stage = Yang_meta$`Stage:ch1`, 
+                                                                                     #stage = Yang_meta$`Stage:ch1`, 
                                                                                      row.names = rownames(Yang_meta)))
 
 baron_yang_prop_bar <- barplot_proportions(decon_output = decon_baron$Yang,

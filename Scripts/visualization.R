@@ -17,7 +17,7 @@ library(ggpubr)
 ## 3) cell type proportions plots (as heatmap or bar plots)
 heatmap_proportions <- function(decon_output, clinical_characteristics = NA, ...){
   # clinical char is dataframe (one or more) with rownames as meta data
-  # deconoutput ist output von framework
+  # decon_output ist output von framework
   heatmap_proportions <- pheatmap(decon_output$decon_res$prop.est.mvw,
                                   annotation_row = clinical_characteristics,
                                   show_rownames = FALSE, ...)
@@ -61,7 +61,7 @@ boxplot_proportions <- function(decon_output, clinical_characteristics_vec, cell
 
 
 ## p-value plot
-boxplot_pvalue <- function(decon_output_list, pvalue_type = "spearman"){
+boxplot_pvalue <- function(decon_output_list, pvalue_type = "Spearman", technology = NULL){
   ## decon_output_list = named list of multiple decon outputs, preferably of the same sc rna-seq dataset
   ## pvalue_type = c("pearson", "spearman", "mad", "rmsd)
   
@@ -69,13 +69,13 @@ boxplot_pvalue <- function(decon_output_list, pvalue_type = "spearman"){
     stop("The list of deconvolution outputs has to be named!")
   }
   
-  if(pvalue_type == "pearson"){
+  if(pvalue_type == "Pearson"){
     idx <- 1
-  } else if (pvalue_type == "spearman"){
+  } else if (pvalue_type == "Spearman"){
     idx <- 2
-  } else if (pvalue_type == "mad"){
+  } else if (pvalue_type == "mAD"){
     idx <- 3
-  } else if (pvalue_type == "rmsd"){
+  } else if (pvalue_type == "RMSD"){
     idx <- 4
   }
   
@@ -84,10 +84,20 @@ sample_names <- lapply(decon_output_list, function(x) rownames(x$decon_res$prop.
 bulk_names <- lapply(1:length(decon_pval), 
                      function(x) rep(names(decon_pval)[x], 
                                      times = length(decon_pval[[x]])))
-boxplot_df <- data.frame("neg_log10_pvalue" = -log10(Reduce(c, decon_pval)), 
-                         "sample" = Reduce(c, sample_names),
-                         "bulk_dataset" = Reduce(c, bulk_names)) 
-pval_all_plot <- ggplot(boxplot_df, aes(x=bulk_dataset, y=neg_log10_pvalue)) + 
+if(!is.null(technology)){
+  technology <- lapply(1:length(decon_pval), 
+                       function(x) rep(technology[x], 
+                                       times = length(decon_pval[[x]])))
+  boxplot_df <- data.frame("neg_log10_pvalue" = -log10(Reduce(c, decon_pval)), 
+                           "sample" = Reduce(c, sample_names),
+                           "bulk_dataset" = Reduce(c, bulk_names),
+                           "technology" = Reduce(c, technology)) 
+} else {
+  boxplot_df <- data.frame("neg_log10_pvalue" = -log10(Reduce(c, decon_pval)), 
+                           "sample" = Reduce(c, sample_names),
+                           "bulk_dataset" = Reduce(c, bulk_names)) 
+}
+pval_all_plot <- ggplot(boxplot_df, aes(x=bulk_dataset, y=neg_log10_pvalue, fill = technology)) + 
   geom_boxplot() + ylab( paste0("-log10(", pvalue_type, " pvalue)", collapse = "")) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
