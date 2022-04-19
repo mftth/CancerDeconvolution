@@ -87,6 +87,8 @@ decon_tosti$Moffitt_array$statistics_observed$rmsd_vec <- decon_tosti$Moffitt_ar
 Moffitt_array_meta$tumor_subtype <- rep(NA, nrow(Moffitt_array_meta))
 Moffitt_array_meta$tumor_subtype[Moffitt_array_meta$`tumor_subtype_0na_1classical_2basal:ch2` == "1"] <- "Classical" 
 Moffitt_array_meta$tumor_subtype[Moffitt_array_meta$`tumor_subtype_0na_1classical_2basal:ch2` == "2"] <- "Basal" 
+write.table(Moffitt_array_bulk, "/mnt/home/melanie/Masterthesis/Data/Bulk/Moffitt/Moffitt_array_bulk2.tsv",
+            sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
 
 ## include only G1,G2,G3 in PAAD and Yang
 Yang_grading <- which(Yang_meta$`grading:ch1` %in% c("G2", "G3"))
@@ -205,6 +207,10 @@ tosti_Guo_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Guo,
                                                                                     "MKI67" = Guo_mki67,
                                                                                     row.names = rownames(Guo_meta)),
                                               annotation_colors = guo_annot_colors, fontsize = 11)
+tosti_Guo_boxplot_prop <- boxplot_proportions(decon_output = decon_tosti$Guo,
+                                              clinical_characteristics_vec = Guo_meta$description,
+                                              cell_types = c("sacinar", "racinar", "mductal")) + 
+  geom_signif(comparisons = list(c("sacinar", "racinar"), c("sacinar", "mductal")), map_signif_level=TRUE)
 
 
 PAAD_mki67_thirds <- quantile(PAAD_bulk["MKI67",], probs = seq(0, 1, 1/3))

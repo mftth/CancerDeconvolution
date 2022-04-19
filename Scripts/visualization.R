@@ -51,9 +51,9 @@ boxplot_proportions <- function(decon_output, clinical_characteristics_vec, cell
   decon_res_molten <- cbind(decon_res_molten, rep(clinical_characteristics_vec, ncol(decon_res)))
   colnames(decon_res_molten) <- c("sample", "cell_type", "value", "clinical_characteristic")
   
-  boxplot_proportions <- ggplot(decon_res_molten, aes(x = clinical_characteristic,
+  boxplot_proportions <- ggplot(decon_res_molten, aes(x = cell_type,
                                                       y = value, 
-                                                      fill = cell_type)) +
+                                                      fill = clinical_characteristic)) +
     geom_boxplot() + ylab("cell type proportion")
   
   return(boxplot_proportions)
