@@ -207,10 +207,10 @@ tosti_Guo_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Guo,
                                                                                     "MKI67" = Guo_mki67,
                                                                                     row.names = rownames(Guo_meta)),
                                               annotation_colors = guo_annot_colors, fontsize = 11)
-tosti_Guo_boxplot_prop <- boxplot_proportions(decon_output = decon_tosti$Guo,
-                                              clinical_characteristics_vec = Guo_meta$description,
-                                              cell_types = c("sacinar", "racinar", "mductal")) + 
-  geom_signif(comparisons = list(c("sacinar", "racinar"), c("sacinar", "mductal")), map_signif_level=TRUE)
+# tosti_Guo_boxplot_prop <- boxplot_proportions(decon_output = decon_tosti$Guo,
+#                                               clinical_characteristics_vec = Guo_meta$description,
+#                                               cell_types = c("sacinar", "mductal", "racinar")) + 
+#   geom_signif(comparisons = list(c("Hybrid", "Classical"), c("Hybrid", "Basal"), c("Classical", "Basal")), map_signif_level=TRUE)
 
 
 PAAD_mki67_thirds <- quantile(PAAD_bulk["MKI67",], probs = seq(0, 1, 1/3))
@@ -277,3 +277,53 @@ tosti_Moffitt_array_prop_heatmap <- heatmap_proportions(decon_output = decon_tos
                                                                                               "MKI67" = Moffitt_mki67,
                                                                                               row.names = rownames(Moffitt_array_meta)),
                                                         fontsize = 11, annotation_colors = Moffitt_annot_colors, clustering_method = "average")
+## ANOVA: Guo, PAAD
+tosti_guo_anova <- correlation_analysis(decon_output = decon_tosti$Guo, 
+                                        clinical_characteristic = Guo_meta$description)
+ggarrange(tosti_guo_anova$aov_plots[[1]], tosti_guo_anova$aov_plots[[2]], tosti_guo_anova$aov_plots[[3]], nrow = 1, ncol = 3) 
+tosti_guo_anova2 <- correlation_analysis(decon_output = decon_tosti$Guo, 
+                                         clinical_characteristic = as.character(Guo_mki67))
+
+tosti_paad_anova1 <- correlation_analysis(decon_output = decon_tosti$PAAD, 
+                                         clinical_characteristic = PAAD_meta$tumor_moffitt)
+ggarrange(tosti_paad_anova1$aov_plots$racinar, tosti_paad_anova1$aov_plots$ductal, nrow = 1, ncol = 2)
+tosti_paad_anova2 <- correlation_analysis(decon_output = decon_tosti$PAAD, 
+                                          clinical_characteristic = PAAD_meta$tumor_bailey)
+ggarrange(tosti_paad_anova2$aov_plots$sacinar, tosti_paad_anova2$aov_plots$racinar, tosti_paad_anova2$aov_plots$mductal, nrow = 2, ncol = 2)
+tosti_paad_anova3 <- correlation_analysis(decon_output = decon_tosti$PAAD, 
+                                          clinical_characteristic = PAAD_meta$tumor_collisson)
+ggarrange(tosti_paad_anova3$aov_plots$sacinar, tosti_paad_anova3$aov_plots$racinar, tosti_paad_anova3$aov_plots$mductal, nrow = 1, ncol = 3)
+tosti_paad_anova4 <- correlation_analysis(decon_output = decon_tosti$PAAD, 
+                                          clinical_characteristic = PAAD_meta$neoplasm_histologic_grade)
+ggarrange(tosti_paad_anova4$aov_plots$sacinar, tosti_paad_anova4$aov_plots$racinar, tosti_paad_anova4$aov_plots$mductal, nrow = 1, ncol = 3)
+tosti_paad_anova5 <- correlation_analysis(decon_output = decon_tosti$PAAD, 
+                                          clinical_characteristic = as.character(PAAD_mki67))
+ggarrange(tosti_paad_anova5$aov_plots$sacinar, tosti_paad_anova5$aov_plots$mductal, nrow = 1, ncol = 2)
+
+
+## survival analysis
+Guo_OS <- Guo_meta$Days
+Guo_Zensur <- Guo_meta$status.1
+Guo_Zensur[Guo_Zensur == 1] <- 0
+Guo_Zensur[Guo_Zensur == 2] <- 1
+tosti_guo_survival <- survival_analysis(decon_output = decon_tosti$Guo, OS = Guo_OS, censor = Guo_Zensur, 
+                                        clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
+                                                                              "MKI67" = as.character(Guo_mki67),
+                                                                              row.names = rownames(Guo_meta)))
+
+PAAD_OS <- rep(NA, nrow(PAAD_meta))
+PAAD_OS[which(is.na(PAAD_meta$days_to_death))] <- PAAD_meta$days_to_last_followup[which(is.na(PAAD_meta$days_to_death))]
+PAAD_OS[which(is.na(PAAD_meta$days_to_last_followup))] <- PAAD_meta$days_to_death[which(is.na(PAAD_meta$days_to_last_followup))]
+PAAD_OS <- as.numeric(PAAD_OS)
+PAAD_censor <- rep(NA, nrow(PAAD_meta))
+PAAD_censor[which(PAAD_meta$vital_status == "alive")] <- 0
+PAAD_censor[which(PAAD_meta$vital_status == "dead")] <- 1
+tosti_PAAD_survival <- survival_analysis(decon_output = decon_tosti$PAAD, 
+                                         OS = PAAD_OS, censor = PAAD_censor, 
+                                         clinical_characteristics =  data.frame("grading" = PAAD_meta$neoplasm_histologic_grade,
+                                                                                "Moffitt" = PAAD_meta$tumor_moffitt,
+                                                                                "Bailey" = PAAD_meta$tumor_bailey,
+                                                                                "Collisson" = PAAD_meta$tumor_collisson,
+                                                                                "MKI67" = as.character(PAAD_mki67),
+                                                                                row.names = rownames(PAAD_meta)))
+

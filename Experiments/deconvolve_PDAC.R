@@ -103,13 +103,17 @@ names(decon_tosti) <- names(bulk_list)
 ###
 ###
 res_path_ensemble <- "~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Ensemble"
-decon_ensemble <- lapply(1:length(bulk_list), function(x) {
-  decon_ensemble_x <- Calculate_pvalue(nrep = reps, ncores = ncores, silent = FALSE, 
-                                    bulk_data = bulk_list[[x]], bulk_meta = bulk_meta_list[[x]],
-                                    sc_data = sc_list, cell_types = cts,
-                                    ensemble = TRUE, multiple_donors = c(TRUE, TRUE, FALSE))
-  saveRDS(decon_ensemble_x, file = paste(res_path_ensemble, "/", names(bulk_list)[x], "_decon.RDS", sep = ""))
-})
+# abortion due to long run time (> 48 hr)
+# decon_ensemble <- lapply(1:length(bulk_list), function(x) {
+#   decon_ensemble_x <- Calculate_pvalue(nrep = reps, ncores = ncores, silent = FALSE, 
+#                                     bulk_data = bulk_list[[x]], bulk_meta = bulk_meta_list[[x]],
+#                                     sc_data = sc_list, cell_types = cts,
+#                                     ensemble = TRUE, multiple_donors = c(TRUE, TRUE, FALSE))
+#   saveRDS(decon_ensemble_x, file = paste(res_path_ensemble, "/", names(bulk_list)[x], "_decon.RDS", sep = ""))
+# })
+guo_ensemble <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = Guo_bulk,
+                                 bulk_meta = Guo_meta, sc_data = sc_list, cell_types = cts,
+                                 ensemble = TRUE, multiple_donors = c(TRUE, TRUE, FALSE))
 
 decon_ensemble <- lapply(1:length(bulk_list), 
                       function(x) readRDS(file = paste(res_path_ensemble, "/", names(bulk_list)[x], 
