@@ -87,9 +87,9 @@ spearman_pval_all <- melt(spearman_pval_all)
 spearman_pval_all$value <- -log10(spearman_pval_all$value)
 #spearman_pval_all$value <- rev(spearman_pval_all$value)
 spearman_pval_all_plot <- ggplot(spearman_pval_all, aes(x=variable, y=value)) + 
-  geom_boxplot() + ylab("SCDC -log10(Spearman p-value)") +  xlab("noise iteration") +
+  geom_boxplot() + ylab("SCDC -log10(Spearman p-value)") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
+  geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red") 
 
 pearson_pval_all <- as.data.frame(sapply(pseudo_decon_all, function(x) x$p_value_per_sample$Pearson))
 pearson_pval_all$sample <- colnames(pseudo_bulk_data)
@@ -97,7 +97,7 @@ pearson_pval_all <- melt(pearson_pval_all)
 pearson_pval_all$value <- -log10(pearson_pval_all$value)
 #pearson_pval_all$value <- rev(pearson_pval_all$value)
 pearson_pval_all_plot <- ggplot(pearson_pval_all, aes(x=variable, y=value)) + 
-  geom_boxplot() + ylab("SCDC -log10(Pearson p-value)") +  xlab("noise iteration")+
+  geom_boxplot() + ylab("SCDC -log10(Pearson p-value)") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
 
@@ -107,7 +107,7 @@ mad_pval_all <- melt(mad_pval_all)
 mad_pval_all$value <- -log10(mad_pval_all$value)
 #mad_pval_all$value <- rev(mad_pval_all$value)
 mad_pval_all_plot <- ggplot(mad_pval_all, aes(x=variable, y=value)) + 
-  geom_boxplot() + ylab("SCDC -log10(mAD p-value)") +  xlab("noise iteration") +
+  geom_boxplot() + ylab("SCDC -log10(mAD p-value)") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
 
@@ -117,7 +117,7 @@ rmsd_pval_all <- melt(rmsd_pval_all)
 rmsd_pval_all$value <- -log10(rmsd_pval_all$value)
 #rmsd_pval_all$value <- rev(rmsd_pval_all$value)
 rmsd_pval_all_plot <- ggplot(rmsd_pval_all, aes(x=variable, y=value)) + 
-  geom_boxplot() + ylab("SCDC -log10(RMSD p-value)") +  xlab("noise iteration") +
+  geom_boxplot() + ylab("SCDC -log10(RMSD p-value)") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
 
@@ -132,7 +132,7 @@ pearson_scdc$sample <- colnames(pseudo_bulk_data)
 pearson_scdc <- melt(pearson_scdc)
 #pearson_scdc$value <- rev(pearson_scdc$value)
 pearson_scdc_plot <- ggplot(pearson_scdc, aes(x=variable, y=value)) + 
-  geom_boxplot() + ylab("SCDC Pearson correlation") +  xlab("noise iteration") +
+  geom_boxplot() + ylab("SCDC Pearson correlation") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 rmsd_scdc <- as.data.frame(rmsd_scdc)
@@ -140,20 +140,20 @@ rmsd_scdc$sample <- colnames(pseudo_bulk_data)
 rmsd_scdc <- melt(rmsd_scdc)
 #rmsd_scdc$value <- rev(rmsd_scdc$value)
 rmsd_scdc_plot <- ggplot(rmsd_scdc, aes(x=variable, y=value)) + 
-  geom_boxplot() + ylab("SCDC RMSD") +  xlab("noise iteration") +
+  geom_boxplot() + ylab("SCDC RMSD") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 spearman_scdc <- as.data.frame(spearman_scdc)
 spearman_scdc$sample <- colnames(pseudo_bulk_data)
 spearman_scdc <- melt(spearman_scdc)
-spearman_scdc_plot <- ggplot(spearman_scdc, aes(x=variable, y=value)) + 
+spearman_scdc_plot <- ggplot(spearman_scdc, aes(x=variable, y=value)) + theme_bw() +
   geom_boxplot() + ylab("SCDC Spearman") +  xlab("noise iteration") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 mad_scdc <- as.data.frame(mad_scdc)
 mad_scdc$sample <- colnames(pseudo_bulk_data)
 mad_scdc <- melt(mad_scdc)
-mad_scdc_plot <- ggplot(mad_scdc, aes(x=variable, y=value)) + 
+mad_scdc_plot <- ggplot(mad_scdc, aes(x=variable, y=value)) + theme_bw() +
   geom_boxplot() + ylab("SCDC mAD") +  xlab("noise iteration") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
@@ -199,7 +199,7 @@ cibersort_pearson_pval_all$sample <- colnames(pseudo_bulk_data)
 cibersort_pearson_pval_all <- melt(cibersort_pearson_pval_all)
 cibersort_pearson_pval_all$value <- -log10(cibersort_pearson_pval_all$value)
 cibersort_pearson_pval_all_plot <- ggplot(cibersort_pearson_pval_all, aes(x=variable, y=value)) + 
-  geom_boxplot() + ylab("CIBERSORT -log10(Pearson p-value)") +  xlab("noise iteration") +
+  geom_boxplot() + ylab("CIBERSORT -log10(Pearson p-value)") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
 
@@ -207,14 +207,14 @@ cibersort_rmse_all <- as.data.frame(do.call(cbind, rmse_cibersort))
 cibersort_rmse_all$sample <- colnames(pseudo_bulk_data)
 cibersort_rmse_all <- melt(cibersort_rmse_all)
 cibersort_rmse_all_plot <- ggplot(cibersort_rmse_all, aes(x=variable, y=value)) + 
-  geom_boxplot() + ylab("CIBERSORT RMSE") +  xlab("noise iteration") +
+  geom_boxplot() + ylab("CIBERSORT RMSE") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 cibersort_correlation_all <- as.data.frame(do.call(cbind, correlation_cibersort))
 cibersort_correlation_all$sample <- colnames(pseudo_bulk_data)
 cibersort_correlation_all <- melt(cibersort_correlation_all)
 cibersort_correlation_all_plot <- ggplot(cibersort_correlation_all, aes(x=variable, y=value)) + 
-  geom_boxplot() + ylab("CIBERSORT Pearson correlation") +  xlab("noise iteration") +
+  geom_boxplot() + ylab("CIBERSORT Pearson correlation") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 save.image("~/Masterthesis/Workspaces/stability_analysis.RData")

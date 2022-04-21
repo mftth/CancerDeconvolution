@@ -76,7 +76,8 @@ survival_analysis <- function(decon_output, cell_types = NULL, OS, censor, clini
   ## create Kaplan-Meier plots
   kp_plot <- ggsurvplot(survival_fit, data = survival_meta, combine = TRUE, ...)
   single_kp_plots <- lapply(survival_fit, 
-                            function(x) ggsurvplot(x, data = survival_meta, pval = TRUE))
+                            function(x) ggsurvplot(x, data = survival_meta, pval = TRUE,
+                                                   legend.title = ""))
   
   return(list("survfit_objects" = survival_fit,
               "survival_pvals" = survival_pval,

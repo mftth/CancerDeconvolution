@@ -66,7 +66,7 @@ names(decon_tosti) <- names(bulk_list)
 #                          function(x) readRDS(file = paste(res_path_ensemble, "/", names(bulk_list)[x], 
 #                                                           "_decon.RDS", sep = "")))
 # names(decon_ensemble) <- names(bulk_list)
-
+guo_ensemble <- readRDS("~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Ensemble/guo_ensemble.RDS")
 
 ## include only primary cancer samples in Moffitt
 Moffitt_array_primary <- which(Moffitt_array_meta$source_name_ch2 == "Pancreas_Primary")
@@ -151,7 +151,6 @@ PAAD_meta$tumor_moffitt <- hayashi_PAAD_meta$tumor_moffitt[hayashi_idx]
 PAAD_meta$tumor_collisson <- hayashi_PAAD_meta$tumor_collisson[hayashi_idx]
 PAAD_meta$tumor_bailey <- hayashi_PAAD_meta$tumor_bailey[hayashi_idx]
 
-
 ## visualize p-values
 technology = c("RNA-seq", "microarray", "RNA-seq", "microarray", "RNA-seq")
 baron_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_baron,
@@ -183,7 +182,21 @@ baron_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_baron,
   ggtitle("Reference: Baron et al.")
 tosti_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_tosti,
                                           pvalue_type = "RMSD", technology = technology) + 
-  ggtitle("Reference: Tosti et al.")
+  ggtitle("Reference: Tosti et al.") + theme(plot.title = element_text(size=12))
+ggarrange(baron_pval_boxplot_rmsd, tosti_pval_boxplot_rmsd, common.legend = TRUE) 
+
+guo_ensemble_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = list("Guo" = guo_ensemble),
+                                                 pvalue_type = "RMSD", technology = "RNA-seq")
+# guo_ensemble_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = list("Guo" = guo_ensemble),
+#                                                  pvalue_type = "Spearman", technology = "RNA-seq")
+# guo_ensemble_pval_boxplot_pearson <- boxplot_pvalue(decon_output_list = list("Guo" = guo_ensemble),
+#                                                  pvalue_type = "Pearson", technology = "RNA-seq")
+# guo_ensemble_pval_boxplot_mad <- boxplot_pvalue(decon_output_list = list("Guo" = guo_ensemble),
+#                                                  pvalue_type = "mAD", technology = "RNA-seq")
+decon_baron$Guo_ensemble <- guo_ensemble
+baron_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_baron,
+                                          pvalue_type = "RMSD", technology = c(technology, "RNA-seq")) + 
+  ggtitle("Reference: Baron et al.") + theme(plot.title = element_text(size=12))
 ggarrange(baron_pval_boxplot_rmsd, tosti_pval_boxplot_rmsd, common.legend = TRUE) 
 
 
@@ -207,6 +220,13 @@ tosti_Guo_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Guo,
                                                                                     "MKI67" = Guo_mki67,
                                                                                     row.names = rownames(Guo_meta)),
                                               annotation_colors = guo_annot_colors, fontsize = 11)
+ensemble_Guo_prop_heatmap <- heatmap_proportions(decon_output = guo_ensemble,
+                                                 clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
+                                                                                       "MKI67" = Guo_mki67,
+                                                                                       row.names = rownames(Guo_meta)),
+                                                 annotation_colors = guo_annot_colors, fontsize = 11,
+                                                 clustering_method = "ward.D2")
+
 # tosti_Guo_boxplot_prop <- boxplot_proportions(decon_output = decon_tosti$Guo,
 #                                               clinical_characteristics_vec = Guo_meta$description,
 #                                               cell_types = c("sacinar", "mductal", "racinar")) + 
@@ -301,6 +321,12 @@ tosti_paad_anova5 <- correlation_analysis(decon_output = decon_tosti$PAAD,
 ggarrange(tosti_paad_anova5$aov_plots$sacinar, tosti_paad_anova5$aov_plots$mductal, nrow = 1, ncol = 2)
 
 
+tosti_guo_anova <- correlation_analysis(decon_output = decon_tosti$Guo, 
+                                        clinical_characteristic = Guo_meta$description)
+ggarrange(tosti_guo_anova$aov_plots[[1]], tosti_guo_anova$aov_plots[[2]], tosti_guo_anova$aov_plots[[3]], nrow = 1, ncol = 3) 
+tosti_guo_anova2 <- correlation_analysis(decon_output = decon_tosti$Guo, 
+                                         clinical_characteristic = as.character(Guo_mki67))
+
 ## survival analysis
 Guo_OS <- Guo_meta$Days
 Guo_Zensur <- Guo_meta$status.1
@@ -310,6 +336,10 @@ tosti_guo_survival <- survival_analysis(decon_output = decon_tosti$Guo, OS = Guo
                                         clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
                                                                               "MKI67" = as.character(Guo_mki67),
                                                                               row.names = rownames(Guo_meta)))
+ggpar(tosti_guo_survival$single_kp$tumor_subtype, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months") # + guides(colour = guide_legend(nrow = 3))
 
 PAAD_OS <- rep(NA, nrow(PAAD_meta))
 PAAD_OS[which(is.na(PAAD_meta$days_to_death))] <- PAAD_meta$days_to_last_followup[which(is.na(PAAD_meta$days_to_death))]
@@ -326,4 +356,8 @@ tosti_PAAD_survival <- survival_analysis(decon_output = decon_tosti$PAAD,
                                                                                 "Collisson" = PAAD_meta$tumor_collisson,
                                                                                 "MKI67" = as.character(PAAD_mki67),
                                                                                 row.names = rownames(PAAD_meta)))
+ggpar(tosti_PAAD_survival$single_kp$Moffitt, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
 

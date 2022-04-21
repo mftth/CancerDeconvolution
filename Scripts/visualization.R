@@ -54,7 +54,7 @@ boxplot_proportions <- function(decon_output, clinical_characteristics_vec, cell
   boxplot_proportions <- ggplot(decon_res_molten, aes(x = clinical_characteristic,
                                                       y = value, 
                                                       fill = cell_type)) +
-    geom_boxplot() + ylab("cell type proportion")
+    geom_boxplot() + ylab("cell type proportion") + theme_bw()
   
   return(boxplot_proportions)
 }
@@ -98,8 +98,8 @@ if(!is.null(technology)){
                            "bulk_dataset" = Reduce(c, bulk_names)) 
 }
 pval_all_plot <- ggplot(boxplot_df, aes(x=bulk_dataset, y=neg_log10_pvalue, fill = technology)) + 
-  geom_boxplot() + ylab( paste0("-log10(", pvalue_type, " pvalue)", collapse = "")) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  geom_boxplot() + ylab( paste0("-log10(", pvalue_type, " pvalue)", collapse = "")) + theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
 
 return(pval_all_plot)
@@ -184,21 +184,21 @@ barplot_ML_evaluation <- function(model_evaluation_list){
     geom_bar(stat = "identity", position = "dodge") + 
     #ggtitle("Accuracy") + 
     ylab("Accuracy") + 
-    ylim(0,1) +
+    ylim(0,1) + theme_bw() +
     theme(axis.title.x = element_blank(), plot.title = element_text(hjust = 0.5))
   
   barplot_sens <- ggplot(data = eval_table, aes(x=Class, y=Sensitivity, fill=Model)) + 
     geom_bar(stat = "identity", position = "dodge") + 
     #ggtitle("Sensitivity") + 
     ylab("Sensitivity") + 
-    ylim(0,1) +
+    ylim(0,1) + theme_bw() +
     theme(axis.title.x = element_blank(), plot.title = element_text(hjust = 0.5))
   
   barplot_spec <- ggplot(data = eval_table, aes(x=Class, y=Specificity, fill=Model)) + 
     geom_bar(stat = "identity", position = "dodge") + 
     #ggtitle("Specificity") + 
     ylab("Specificity") + 
-    ylim(0,1) +
+    ylim(0,1) + theme_bw() +
     theme(axis.title.x = element_blank(), plot.title = element_text(hjust = 0.5))
   
   barplot_ML_eval <- ggarrange(barplot_acc, barplot_sens, barplot_spec, nrow = 1, common.legend = T)
@@ -258,7 +258,7 @@ boxplot_ML_sd <- function(ml_model_list, folds = 5, repeats = 10){
   perf_all_models_molten <- melt(perf_all_models)
   
   boxplot_ML_eval <- ggplot(perf_all_models_molten, aes(x=variable, y=value, fill = Model)) + 
-    geom_boxplot() + #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    geom_boxplot() + theme_bw() + #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     ylim(0,1) + ylab("Performance value") + xlab("Performance characteristic")
   
   # boxplot_ML_acc <- ggplot(perf_all_models, aes(x=Model, y=Accuracy)) + 
