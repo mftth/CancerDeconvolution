@@ -321,11 +321,12 @@ tosti_paad_anova5 <- correlation_analysis(decon_output = decon_tosti$PAAD,
 ggarrange(tosti_paad_anova5$aov_plots$sacinar, tosti_paad_anova5$aov_plots$mductal, nrow = 1, ncol = 2)
 
 
-tosti_guo_anova <- correlation_analysis(decon_output = decon_tosti$Guo, 
+ensemble_guo_anova <- correlation_analysis(decon_output = guo_ensemble, 
                                         clinical_characteristic = Guo_meta$description)
-ggarrange(tosti_guo_anova$aov_plots[[1]], tosti_guo_anova$aov_plots[[2]], tosti_guo_anova$aov_plots[[3]], nrow = 1, ncol = 3) 
-tosti_guo_anova2 <- correlation_analysis(decon_output = decon_tosti$Guo, 
+ggarrange(ensemble_guo_anova$aov_plots$acinar, ensemble_guo_anova$aov_plots$ductal) 
+ensemble_guo_anova2 <- correlation_analysis(decon_output = guo_ensemble, 
                                          clinical_characteristic = as.character(Guo_mki67))
+ggarrange(ensemble_guo_anova2$aov_plots$acinar, ensemble_guo_anova2$aov_plots$ductal) 
 
 ## survival analysis
 Guo_OS <- Guo_meta$Days
@@ -340,6 +341,10 @@ ggpar(tosti_guo_survival$single_kp$tumor_subtype,
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
       xlab = "Time in months") # + guides(colour = guide_legend(nrow = 3))
+ensemble_guo_survival <- survival_analysis(decon_output = guo_ensemble, OS = Guo_OS, censor = Guo_Zensur, 
+                                           clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
+                                                                              "MKI67" = as.character(Guo_mki67),
+                                                                              row.names = rownames(Guo_meta)))
 
 PAAD_OS <- rep(NA, nrow(PAAD_meta))
 PAAD_OS[which(is.na(PAAD_meta$days_to_death))] <- PAAD_meta$days_to_last_followup[which(is.na(PAAD_meta$days_to_death))]
