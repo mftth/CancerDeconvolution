@@ -151,6 +151,8 @@ PAAD_meta$tumor_moffitt <- hayashi_PAAD_meta$tumor_moffitt[hayashi_idx]
 PAAD_meta$tumor_collisson <- hayashi_PAAD_meta$tumor_collisson[hayashi_idx]
 PAAD_meta$tumor_bailey <- hayashi_PAAD_meta$tumor_bailey[hayashi_idx]
 
+
+
 ## visualize p-values
 technology = c("RNA-seq", "microarray", "RNA-seq", "microarray", "RNA-seq")
 baron_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_baron,
@@ -198,6 +200,7 @@ baron_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_baron,
                                           pvalue_type = "RMSD", technology = c(technology, "RNA-seq")) + 
   ggtitle("Reference: Baron et al.") + theme(plot.title = element_text(size=12))
 ggarrange(baron_pval_boxplot_rmsd, tosti_pval_boxplot_rmsd, common.legend = TRUE) 
+
 
 
 ## visualize cell type props
@@ -297,6 +300,9 @@ tosti_Moffitt_array_prop_heatmap <- heatmap_proportions(decon_output = decon_tos
                                                                                               "MKI67" = Moffitt_mki67,
                                                                                               row.names = rownames(Moffitt_array_meta)),
                                                         fontsize = 11, annotation_colors = Moffitt_annot_colors, clustering_method = "average")
+
+
+
 ## ANOVA: Guo, PAAD
 tosti_guo_anova <- correlation_analysis(decon_output = decon_tosti$Guo, 
                                         clinical_characteristic = Guo_meta$description)
@@ -327,6 +333,8 @@ ggarrange(ensemble_guo_anova$aov_plots$acinar, ensemble_guo_anova$aov_plots$duct
 ensemble_guo_anova2 <- correlation_analysis(decon_output = guo_ensemble, 
                                          clinical_characteristic = as.character(Guo_mki67))
 ggarrange(ensemble_guo_anova2$aov_plots$acinar, ensemble_guo_anova2$aov_plots$ductal) 
+
+
 
 ## survival analysis
 Guo_OS <- Guo_meta$Days
@@ -365,4 +373,184 @@ ggpar(tosti_PAAD_survival$single_kp$Moffitt,
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
       xlab = "Time in months")
+ggpar(tosti_PAAD_survival$single_kp$grading, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+ggpar(tosti_PAAD_survival$single_kp$MKI67, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+
+
+
+## ML analysis (Guo-ENSEMBLE, Guo-Tosti, PAAD-Tosti)
+## Guo (ensemble + tosti) train on whole dataset (predict PDAC subtype)
+## PAAD train on part of it (predict PDAC subtype, and grading)
+
+tosti_guo_prepped <- prepare_decon_res(p_value = TRUE, decon_res = decon_tosti$Guo, 
+                                       clinical_char = Guo_meta$description)
+tosti_guo_ml_model <- train_ML_model(trainData = tosti_guo_prepped)
+ensemble_guo_prepped <- prepare_decon_res(p_value = TRUE, decon_res = guo_ensemble, 
+                                          clinical_char = Guo_meta$description)
+ensemble_guo_ml_model <- train_ML_model(trainData = ensemble_guo_prepped)
+guo_signature_genes <- data.frame("KRAS" = as.numeric(Guo_bulk["KRAS",]), "GATA6" = as.numeric(Guo_bulk["GATA6",]), 
+                                   "response" = Guo_meta$description, row.names = rownames(Guo_meta))
+guo_signature_genes$response <- factor(guo_signature_genes$response)
+guo_baseline_model <- train_ML_model(trainData = guo_signature_genes, feature_selection = FALSE)
+guo_baseline_comparison <- boxplot_ML_sd(ml_model_list = 
+                                           list("Guo_ENSEMBLE" = ensemble_guo_ml_model$rf_model_whole,
+                                           "Guo_Tosti" = tosti_guo_ml_model$rf_model_reduced,
+                                           "Guo_baseline" = guo_baseline_model$rf_model_whole),
+                                         levels = c("Classical", "Basal", "Hybrid"))
+guo_baseline_comparison$boxplots + theme(legend.position="top")
+mean(guo_baseline_comparison$boxplots$data$value[guo_baseline_comparison$boxplots$data$Model == "Guo_ENSEMBLE" &
+                                        guo_baseline_comparison$boxplots$data$variable == "Sensitivity"])
+plot(tosti_guo_ml_model$varimp_whole)
+plot(ensemble_guo_ml_model$varimp_whole)
+plot.roc(guo_baseline_comparison$ROCcurves$Guo_Tosti, print.auc = TRUE, col = "blue")
+plot.roc(guo_baseline_comparison$ROCcurves$Guo_ENSEMBLE, print.auc = TRUE,
+         print.auc.x = 0.5, print.auc.y = 0.4, col = "green", add = TRUE)
+plot.roc(guo_baseline_comparison$ROCcurves$Guo_baseline, print.auc = TRUE,
+         print.auc.x = 0.5, print.auc.y = 0.3,col = "red", add = TRUE)
+legend(1, 1, legend=c("Guo-Tosti", "Guo-ENSEMBLE", "Guo-baseline"),
+       col=c("blue", "green", "red"), lt = 1,cex=0.8)
+
+
+tosti_PAAD_prepped_grading <- prepare_decon_res(p_value = TRUE, decon_res = decon_tosti$PAAD, 
+                                                clinical_char = PAAD_meta$neoplasm_histologic_grade)
+tosti_PAAD_model_grading <- train_ML_model(trainData = tosti_PAAD_prepped_grading)
+PAAD_mki67_prepped <- data.frame("MKI67" = as.numeric(PAAD_bulk["MKI67",]),
+                                 "response" = PAAD_meta$neoplasm_histologic_grade, row.names = rownames(PAAD_meta))
+PAAD_mki67_prepped$response <- factor(PAAD_mki67_prepped$response)
+fitControl <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  repeats = 10,
+  sampling = "down",
+  savePred = TRUE
+)
+PAAD_mki67_ml_model <- train(x = data.frame("MKI67" = PAAD_mki67_prepped$MKI67, 
+                                            row.names = rownames(PAAD_mki67_prepped)), 
+                             y = PAAD_mki67_prepped$response, 
+                             method = "rf", metric = "Accuracy", trControl = fitControl,
+                             type = "Classification", ntree = 500)
+PAAD_grading_ml_evaluation <- boxplot_ML_sd(list("PAAD_Tosti" = tosti_PAAD_ml_model_grading$rf_model_reduced ,
+                                                 "MKI67_baseline_PAAD" = PAAD_mki67_ml_model),
+                                            levels = c("G1", "G2", "G3"))
+
+PAAD_grading_ml_evaluation$boxplots + theme(legend.position="top")
+mean(PAAD_grading_ml_evaluation$boxplots$data$value[grading_ml_evaluation$boxplots$data$Model == "PAAD_Tosti" &
+                                                      grading_ml_evaluation$boxplots$data$variable == "Accuracy"])
+plot(tosti_PAAD_model_grading$varimp_whole)
+plot.roc(PAAD_grading_ml_evaluation$ROCcurves$PAAD_Tosti, print.auc = TRUE, col = "blue")
+plot.roc(PAAD_grading_ml_evaluation$ROCcurves$MKI67_baseline_PAAD, print.auc = TRUE,
+         print.auc.x = 0.5, print.auc.y = 0.4,col = "red", add = TRUE)
+legend(1, 1, legend=c("PAAD-Tosti", "PAAD-baseline"),
+       col=c("blue", "red"), lt = 1,cex=0.8)
+
+
+tosti_PAAD_prepped_moffitt <- prepare_decon_res(p_value = TRUE, decon_res = decon_tosti$PAAD, 
+                                                clinical_char = PAAD_meta$tumor_moffitt)
+empty_hayashi2 <- which(is.na(tosti_PAAD_prepped_moffitt$response))
+tosti_PAAD_prepped_moffitt <- tosti_PAAD_prepped_moffitt[-empty_hayashi2,]
+tosti_PAAD_model_moffitt <- train_ML_model(trainData = tosti_PAAD_prepped_moffitt)
+PAAD_signature_genes2 <- data.frame("KRAS" = as.numeric(PAAD_bulk["KRAS",]), "GATA6" = as.numeric(PAAD_bulk["GATA6",]), 
+                                    "response" = PAAD_meta$tumor_moffitt, row.names = rownames(PAAD_meta))
+PAAD_signature_genes2 <- PAAD_signature_genes2[-empty_hayashi2,]
+PAAD_signature_genes2$response <- factor(PAAD_signature_genes2$response)
+PAAD_signature_genes_model2 <- train_ML_model(trainData = PAAD_signature_genes2, feature_selection = FALSE)
+PAAD_baseline_comparison <- boxplot_ML_sd(ml_model_list = 
+                                            list("PAAD_Tosti" = tosti_PAAD_model_moffitt$rf_model_reduced,
+                                                 "PAAD_baseline" = PAAD_signature_genes_model2$rf_model_whole),
+                                          levels = c("Classical", "Basal"))
+PAAD_baseline_comparison$boxplots + theme(legend.position="top")
+mean(PAAD_baseline_comparison$boxplots$data$value[PAAD_baseline_comparison$boxplots$data$Model == "PAAD_Tosti" &
+                                                   PAAD_baseline_comparison$boxplots$data$variable == "Accuracy"])
+plot(tosti_PAAD_model_moffitt$varimp_whole)
+plot.roc(PAAD_baseline_comparison$ROCcurves$PAAD_Tosti, print.auc = TRUE, col = "blue")
+plot.roc(PAAD_baseline_comparison$ROCcurves$PAAD_baseline, print.auc = TRUE,
+         print.auc.x = 0.5, print.auc.y = 0.4,col = "red", add = TRUE)
+legend(1, 1, legend=c("PAAD-Tosti", "PAAD-baseline"),
+       col=c("blue", "red"), lt = 1,cex=0.8)
+
+
+tosti_PAAD_prepped_collisson <- prepare_decon_res(p_value = TRUE, decon_res = decon_tosti$PAAD, 
+                                                clinical_char = PAAD_meta$tumor_collisson)
+empty_hayashi3 <- which(is.na(tosti_PAAD_prepped_collisson$response))
+tosti_PAAD_prepped_collisson <- tosti_PAAD_prepped_collisson[-empty_hayashi3,]
+tosti_PAAD_model_collisson <- train_ML_model(trainData = tosti_PAAD_prepped_collisson)
+PAAD_signature_genes3 <- data.frame("KRAS" = as.numeric(PAAD_bulk["KRAS",]), "GATA6" = as.numeric(PAAD_bulk["GATA6",]), 
+                                    "response" = PAAD_meta$tumor_collisson, row.names = rownames(PAAD_meta))
+PAAD_signature_genes3 <- PAAD_signature_genes2[-empty_hayashi3,]
+PAAD_signature_genes3$response <- factor(PAAD_signature_genes3$response)
+PAAD_signature_genes_model3 <- train_ML_model(trainData = PAAD_signature_genes3, feature_selection = FALSE)
+PAAD_baseline_comparison <- boxplot_ML_sd(ml_model_list = 
+                                            list("PAAD_Tosti" = tosti_PAAD_model_collisson$rf_model_whole,
+                                                 "PAAD_baseline" = PAAD_signature_genes_model3$rf_model_whole),
+                                          levels = c("Exocrine", "Classical", "QM"))
+PAAD_baseline_comparison$boxplots + theme(legend.position="top")
+mean(PAAD_baseline_comparison$boxplots$data$value[PAAD_baseline_comparison$boxplots$data$Model == "PAAD_Tosti" &
+                                                    PAAD_baseline_comparison$boxplots$data$variable == "Accuracy"])
+plot(tosti_PAAD_model_collisson$varimp_whole)
+plot.roc(PAAD_baseline_comparison$ROCcurves$PAAD_Tosti, print.auc = TRUE, col = "blue")
+plot.roc(PAAD_baseline_comparison$ROCcurves$PAAD_baseline, print.auc = TRUE,
+         print.auc.x = 0.5, print.auc.y = 0.4,col = "red", add = TRUE)
+legend(1, 1, legend=c("PAAD-Tosti", "PAAD-baseline"),
+       col=c("blue", "red"), lt = 1,cex=0.8)
+
+
+tosti_PAAD_prepped_bailey <- prepare_decon_res(p_value = TRUE, decon_res = decon_tosti$PAAD, 
+                                                clinical_char = PAAD_meta$tumor_bailey)
+empty_hayashi4 <- which(is.na(tosti_PAAD_prepped_bailey$response))
+tosti_PAAD_prepped_bailey <- tosti_PAAD_prepped_bailey[-empty_hayashi2,]
+tosti_PAAD_model_bailey <- train_ML_model(trainData = tosti_PAAD_prepped_bailey)
+PAAD_signature_genes4 <- data.frame("KRAS" = as.numeric(PAAD_bulk["KRAS",]), "GATA6" = as.numeric(PAAD_bulk["GATA6",]), 
+                                    "response" = PAAD_meta$tumor_bailey, row.names = rownames(PAAD_meta))
+PAAD_signature_genes4 <- PAAD_signature_genes4[-empty_hayashi4,]
+PAAD_signature_genes4$response <- factor(PAAD_signature_genes4$response)
+PAAD_signature_genes_model4 <- train_ML_model(trainData = PAAD_signature_genes4, feature_selection = FALSE)
+PAAD_baseline_comparison <- boxplot_ML_sd(ml_model_list = 
+                                            list("Tosti_PAAD" = tosti_PAAD_model_bailey$rf_model_reduced,
+                                                 "baseline_PAAD" = PAAD_signature_genes_model4$rf_model_whole),
+                                          levels = c("ADEX", "Immunogenic", "Squamous", "Progenitor"))
+plot.roc(PAAD_baseline_comparison$ROCcurves$Tosti_PAAD, print.auc = TRUE)
+plot.roc(PAAD_baseline_comparison$ROCcurves$baseline_PAAD, print.auc = TRUE)
+
+
+
+# tosti_PAAD_prepped_collisson <- prepare_decon_res(p_value = TRUE, decon_res = decon_tosti$PAAD, 
+#                                                   clinical_char = PAAD_meta$tumor_collisson)
+# empty_hayashi <- which(is.na(tosti_PAAD_prepped_collisson$response))
+# tosti_PAAD_prepped_collisson <- tosti_PAAD_prepped_collisson[-empty_hayashi,]
+# tosti_PAAD_collisson_trainRowNumbers <- createDataPartition(tosti_PAAD_prepped_collisson$response, p = 0.8, list = FALSE)
+# tosti_PAAD_collisson_train <- tosti_PAAD_prepped_collisson[tosti_PAAD_collisson_trainRowNumbers,]
+# tosti_PAAD_collisson_test <- tosti_PAAD_prepped_collisson[-tosti_PAAD_collisson_trainRowNumbers,]
+# tosti_PAAD_ml_model_collisson <- train_ML_model(trainData = tosti_PAAD_collisson_train)
+# tosti_PAAD_ml_pred_collisson <- test_ML_model(train_output = tosti_PAAD_ml_model_collisson, 
+#                                               testData = tosti_PAAD_collisson_test[,-ncol(tosti_PAAD_collisson_test)], 
+#                                               truth_vec = tosti_PAAD_collisson_test$response)
+# tosti_PAAD_collisson_roc_curve <- roc_curve(labels = tosti_PAAD_collisson_test$response, 
+#                                             predictions = tosti_PAAD_ml_pred_collisson$predicted_whole, 
+#                                             levels = c("Classical", "Exocrine", "QM"))
+# PAAD_signature_genes <- data.frame("KRAS" = as.numeric(PAAD_bulk["KRAS",]), "GATA6" = as.numeric(PAAD_bulk["GATA6",]), 
+#                                   "response" = PAAD_meta$tumor_collisson, row.names = rownames(PAAD_meta))
+# PAAD_signature_genes <- PAAD_signature_genes[-empty_hayashi,]
+# PAAD_signature_genes$response <- factor(PAAD_signature_genes$response)
+# PAAD_signature_genes_trainRowNumbers <- createDataPartition(PAAD_signature_genes$response, p = 0.8, list = FALSE)
+# PAAD_signature_genes_train <- PAAD_signature_genes[PAAD_signature_genes_trainRowNumbers,]
+# PAAD_signature_genes_test <- PAAD_signature_genes[-PAAD_signature_genes_trainRowNumbers,]
+# PAAD_signature_genes_model <- train_ML_model(trainData = PAAD_signature_genes_train, feature_selection = FALSE)
+# PAAD_signature_genes_pred <- test_ML_model(train_output = PAAD_signature_genes_model, 
+#                                            testData = PAAD_signature_genes_test[,-ncol(PAAD_signature_genes_test)], 
+#                                            truth_vec = PAAD_signature_genes_test$response,
+#                                            feature_selection = FALSE)
+# PAAD_signature_genes_roc_curve <- roc_curve(labels = PAAD_signature_genes_test$response, 
+#                                       predictions = PAAD_signature_genes_pred$predicted_whole, 
+#                                       levels = c("Classical", "Exocrine", "QM"))
+# PAAD_collisson_ml_evaluation <- boxplot_ML_sd(list("Tosti_PAAD" = tosti_PAAD_ml_model_collisson$rf_model_whole,
+#                                                    "baseline_PAAD" = PAAD_signature_genes_model$rf_model_whole))
+# PAAD_collisson_ml_evaluation2 <- barplot_ML_evaluation(list("Tosti_PAAD" = tosti_PAAD_ml_pred_collisson$evaluation_whole,
+#                                                             "baseline_PAAD" = PAAD_signature_genes_pred$evaluation_whole))
+
 

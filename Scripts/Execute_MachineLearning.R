@@ -104,8 +104,7 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
 
 
 test_ML_model <- function(train_output, testData, truth_vec,  preprocess = FALSE, preprocess_method = "scale",
-                          classification = TRUE){ ## test data, aka hold out set
-  ## assumes, feature selection was performed
+                          classification = TRUE, feature_selection = TRUE){ ## test data, aka hold out set
   ## descriptive statistics
   skimmed <- skim(testData)
   
@@ -125,18 +124,26 @@ test_ML_model <- function(train_output, testData, truth_vec,  preprocess = FALSE
   
   message("Applying models to test data ..")
   predicted_whole <- predict(train_output$rf_model_whole, testData)
-  predicted_red <- predict(train_output$rf_model_reduced, testData)
-  
   if(classification){
     evaluation_whole <- caret::confusionMatrix(data = predicted_whole, reference = truth_vec, mode = "everything")
-    evaluation_red <- caret::confusionMatrix(data = predicted_red, reference = truth_vec, mode = "everything")
   } else {
     evaluation_whole <- postResample(pred = predicted_whole, obs = truth_vec)
-    evaluation_red <- postResample(pred = predicted_red, obs = truth_vec)  
   }
   
-  test_output <- list("predicted_whole" = predicted_whole, "evaluation_whole" = evaluation_whole,
-                      "predicted_reduced" = predicted_red, "evaluation_reduced" = evaluation_red)
+  if(feature_selection){
+    predicted_red <- predict(train_output$rf_model_reduced, testData)
+    if(classification){
+      evaluation_red <- caret::confusionMatrix(data = predicted_red, reference = truth_vec, mode = "everything")
+    } else {
+      evaluation_red <- postResample(pred = predicted_red, obs = truth_vec)  
+    }
+    test_output <- list("predicted_whole" = predicted_whole, "evaluation_whole" = evaluation_whole,
+                        "predicted_reduced" = predicted_red, "evaluation_reduced" = evaluation_red)
+    
+  } else {
+    test_output <- list("predicted_whole" = predicted_whole, "evaluation_whole" = evaluation_whole)
+  }
+  
   return(test_output)
 }
 

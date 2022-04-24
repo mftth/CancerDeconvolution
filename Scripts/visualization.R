@@ -207,9 +207,8 @@ barplot_ML_evaluation <- function(model_evaluation_list){
 }
 
 
-boxplot_ML_sd <- function(ml_model_list, folds = 5, repeats = 10){
+boxplot_ML_sd <- function(ml_model_list, folds = 5, repeats = 10, levels = NULL){
   ## ml_model_list is a list of models given by train_ML_model$rf_model_* function
-  ## ACHTUNG funktioniert nur fuer zwei-klassen model!!
   if(is.null(names(ml_model_list))){
     names(ml_model_list) <- sapply(1:length(ml_model_list), 
                                            function(x) paste0("model", x, collapse = ""))
@@ -237,12 +236,22 @@ boxplot_ML_sd <- function(ml_model_list, folds = 5, repeats = 10){
       repeat_confusion_matrix <- caret::confusionMatrix(repeat_table$pred, 
                                                         repeat_table$obs, 
                                                         mode = "everything")$byClass
-      repeat_accuracy <- unname(repeat_confusion_matrix['Balanced Accuracy'])
-      cv_list_repeat_acc <- c(cv_list_repeat_acc, repeat_accuracy)
-      repeat_sensitivity <- unname(repeat_confusion_matrix['Sensitivity'])
-      cv_list_repeat_sens <- c(cv_list_repeat_sens, repeat_sensitivity)
-      repeat_specificty <- unname(repeat_confusion_matrix['Specificity']) 
-      cv_list_repeat_spec <- c(cv_list_repeat_spec, repeat_specificty)
+      if(is.matrix(repeat_confusion_matrix)){
+        repeat_accuracy <- unname(repeat_confusion_matrix[,'Balanced Accuracy'])
+        cv_list_repeat_acc <- c(cv_list_repeat_acc, repeat_accuracy)
+        repeat_sensitivity <- unname(repeat_confusion_matrix[,'Sensitivity'])
+        cv_list_repeat_sens <- c(cv_list_repeat_sens, repeat_sensitivity)
+        repeat_specificty <- unname(repeat_confusion_matrix[,'Specificity']) 
+        cv_list_repeat_spec <- c(cv_list_repeat_spec, repeat_specificty)
+      } else {
+        repeat_accuracy <- unname(repeat_confusion_matrix['Balanced Accuracy'])
+        cv_list_repeat_acc <- c(cv_list_repeat_acc, repeat_accuracy)
+        repeat_sensitivity <- unname(repeat_confusion_matrix['Sensitivity'])
+        cv_list_repeat_sens <- c(cv_list_repeat_sens, repeat_sensitivity)
+        repeat_specificty <- unname(repeat_confusion_matrix['Specificity']) 
+        cv_list_repeat_spec <- c(cv_list_repeat_spec, repeat_specificty)
+      }
+      
     }
     
     cv_list_repeat_perf <- data.frame("Accuracy" = cv_list_repeat_acc,
@@ -254,27 +263,23 @@ boxplot_ML_sd <- function(ml_model_list, folds = 5, repeats = 10){
   }
   
   perf_all_models <- Reduce(rbind,lapply(cv_list, function(x) x$performance_cv))
-  perf_all_models$Model <- rep(names(cv_list), each = nrow(cv_list[[1]]$performance_cv))
+  perf_all_models$Model <- Reduce(c,lapply(1:length(cv_list), 
+                                           function(x) rep(names(cv_list)[x], 
+                                                           nrow(cv_list[[x]]$performance_cv))))
   perf_all_models_molten <- melt(perf_all_models)
   
   boxplot_ML_eval <- ggplot(perf_all_models_molten, aes(x=variable, y=value, fill = Model)) + 
     geom_boxplot() + theme_bw() + #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     ylim(0,1) + ylab("Performance value") + xlab("Performance characteristic")
   
-  # boxplot_ML_acc <- ggplot(perf_all_models, aes(x=Model, y=Accuracy)) + 
-  #   geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  #   ylim(0,1)
-  # 
-  # boxplot_ML_sens <- ggplot(perf_all_models, aes(x=Model, y=Sensitivity)) + 
-  #   geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  #   ylim(0,1)
-  # 
-  # boxplot_ML_spec <- ggplot(perf_all_models, aes(x=Model, y=Specificity)) + 
-  #   geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  #   ylim(0,1)
-  # 
-  # boxplot_ML_eval <- ggarrange(boxplot_ML_acc, boxplot_ML_sens, boxplot_ML_spec, nrow = 1)
-  
-  return(boxplot_ML_eval)
+  if(!is.null(levels)){
+    roc_curves <- lapply(cv_list, function(x) roc_curve(labels = x$table_complete$obs, 
+                                                        predictions = x$table_complete$pred, 
+                                                        levels = levels))
+    return(list("boxplots" = boxplot_ML_eval,
+                "ROCcurves" = roc_curves))
+  } else {
+    return(list("boxplots" = boxplot_ML_eval))
+  }
   
 }
