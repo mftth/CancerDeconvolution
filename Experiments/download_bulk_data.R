@@ -2,8 +2,6 @@
 ## download bulk RNA-seq datasets from different sources
 ## bulk RNA-seq of common cancers and their meta data (specifically tumor grading)
 ## pancreatic ductal adenocarcinoma (PDAC)
-## invasive ductal carcinoma (IDC) (breast cancer)
-## diffuse large B-cell lymphoma (DLBCL)
 
 library(tidyverse)
 library(GEOquery)

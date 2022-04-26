@@ -1,6 +1,5 @@
 ## Mastherthesis, Melanie Fattohi
 ## scRNA-seq data by Tosti, Baron
-## scRNA-seq von PDAC werden noch gesucht
 ## Deconvolve Yang, PAAD, Moffitt, Guo
 ## nreps = 1000, ncores = 15
 ## survival analysis
@@ -438,10 +437,9 @@ PAAD_mki67_ml_model <- train(x = data.frame("MKI67" = PAAD_mki67_prepped$MKI67,
 PAAD_grading_ml_evaluation <- boxplot_ML_sd(list("PAAD_Tosti" = tosti_PAAD_ml_model_grading$rf_model_reduced ,
                                                  "MKI67_baseline_PAAD" = PAAD_mki67_ml_model),
                                             levels = c("G1", "G2", "G3"))
-
 PAAD_grading_ml_evaluation$boxplots + theme(legend.position="top")
-mean(PAAD_grading_ml_evaluation$boxplots$data$value[grading_ml_evaluation$boxplots$data$Model == "PAAD_Tosti" &
-                                                      grading_ml_evaluation$boxplots$data$variable == "Accuracy"])
+mean(PAAD_grading_ml_evaluation$boxplots$data$value[PAAD_grading_ml_evaluation$boxplots$data$Model == "PAAD_Tosti" &
+                                                      PAAD_grading_ml_evaluation$boxplots$data$variable == "Accuracy"])
 plot(tosti_PAAD_model_grading$varimp_whole)
 plot.roc(PAAD_grading_ml_evaluation$ROCcurves$PAAD_Tosti, print.auc = TRUE, col = "blue")
 plot.roc(PAAD_grading_ml_evaluation$ROCcurves$MKI67_baseline_PAAD, print.auc = TRUE,
@@ -552,5 +550,3 @@ plot.roc(PAAD_baseline_comparison$ROCcurves$baseline_PAAD, print.auc = TRUE)
 #                                                    "baseline_PAAD" = PAAD_signature_genes_model$rf_model_whole))
 # PAAD_collisson_ml_evaluation2 <- barplot_ML_evaluation(list("Tosti_PAAD" = tosti_PAAD_ml_pred_collisson$evaluation_whole,
 #                                                             "baseline_PAAD" = PAAD_signature_genes_pred$evaluation_whole))
-
-
