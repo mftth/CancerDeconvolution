@@ -25,7 +25,7 @@ mart <- useDataset("hsapiens_gene_ensembl", useMart("ENSEMBL_MART_ENSEMBL"))
 chapuy_obj <- getGEO(filename="~/Masterthesis/Data/Bulk/DLBCL/Chapuy/GSE98588_series_matrix.txt") 
 chapuy_m <- chapuy_obj@phenoData@data
 chapuy_m$title2 <- gsub("_NULLPAIR", "", chapuy_m$title)
-chapuy_bulk <- chapuy_obj@assayData$exprs
+chapuy_bulk <- as.data.frame(chapuy_obj@assayData$exprs)
 chapuy_bulk <- chapuy_bulk[,match(chapuy_m$geo_accession, colnames(chapuy_bulk))]
 chapuy_bulk_genes <- rownames(chapuy_bulk)
 rownames(chapuy_bulk) <- gsub("_at", "", rownames(chapuy_bulk))
@@ -35,11 +35,25 @@ chapuy_annotLookUp <- getBM(filters = "ensembl_gene_id",
                             attributes = c("ensembl_gene_id", "hgnc_symbol"),
                             values = rownames(chapuy_bulk),
                             mart = mart)
-chapuy_gene_idx <- match(chapuy_annotLookUp$ensembl_gene_id, rownames(chapuy_bulk))
+#chapuy_gene_idx <- match(chapuy_annotLookUp$ensembl_gene_id, rownames(chapuy_bulk))
+#chapuy_bulk <- chapuy_bulk[chapuy_gene_idx,]
+#all(rownames(chapuy_bulk) == chapuy_annotLookUp$ensembl_gene_id)
+#rownames(chapuy_bulk) <- chapuy_annotLookUp$hgnc_symbol
+#all(colnames(chapuy_bulk) == chapuy_m$geo_accession)
+chapuy_genes <- intersect(rownames(chapuy_bulk), chapuy_annotLookUp$ensembl_gene_id)
+chapuy_gene_idx <- match(chapuy_genes, rownames(chapuy_bulk))
 chapuy_bulk <- chapuy_bulk[chapuy_gene_idx,]
+chapuy_gene_idx <- match(chapuy_genes, chapuy_annotLookUp$ensembl_gene_id)
+chapuy_annotLookUp <- chapuy_annotLookUp[chapuy_gene_idx,]
+all(rownames(chapuy_bulk) == chapuy_annotLookUp$ensembl_gene_id)
+chapuy_max_var_genes <- mclapply(unique(chapuy_annotLookUp$hgnc_symbol), 
+                                   function(x) get_max_var_genes(chapuy_bulk, gene = x, genes = chapuy_annotLookUp$hgnc_symbol),
+                                   mc.cores = 5)
+chapuy_max_var_genes <- Reduce(c, chapuy_max_var_genes)
+chapuy_annotLookUp <- chapuy_annotLookUp[match(chapuy_max_var_genes, chapuy_annotLookUp$ensembl_gene_id),]
+chapuy_bulk <- chapuy_bulk[match(chapuy_max_var_genes, rownames(chapuy_bulk)),]
 all(rownames(chapuy_bulk) == chapuy_annotLookUp$ensembl_gene_id)
 rownames(chapuy_bulk) <- chapuy_annotLookUp$hgnc_symbol
-all(colnames(chapuy_bulk) == chapuy_m$geo_accession)
 chapuy_suppl1 <- read_excel("~/Masterthesis/Data/Bulk/DLBCL/Chapuy/41591_2018_16_MOESM3_ESM.xlsx", sheet = 1, skip = 1)
 chapuy_suppl1$individual_id <- gsub("-", "_", chapuy_suppl1$individual_id)
 chapuy_suppl1$individual_id <- toupper(chapuy_suppl1$individual_id)
@@ -63,6 +77,7 @@ chapuy_suppl8$geo_accession <- chapuy_m$geo_accession
 chapuy_meta <- cbind(chapuy_m[,c("title", "title2", "geo_accession", "tissue type:ch1")],
                      chapuy_suppl1, chapuy_suppl2, chapuy_suppl8[,"Cluster"])
 rownames(chapuy_meta) <- chapuy_meta$geo_accession ## COO, OS, OS_stat, Cluster
+chapuy_meta <- chapuy_meta[,-duplicated(colnames(chapuy_meta))]
 all(colnames(chapuy_bulk) == rownames(chapuy_meta))
 write.table(chapuy_bulk, file = "~/Masterthesis/Data/Bulk/DLBCL/Chapuy/Chapuy_bulk.tsv",
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
@@ -121,6 +136,7 @@ schmitz_suppl <- schmitz_suppl[match(schmitz_m$ID, schmitz_suppl$`dbGaP subject 
 all(schmitz_m$ID == schmitz_suppl$`dbGaP subject ID`)
 schmitz_meta <- cbind(schmitz_m, schmitz_suppl)
 rownames(schmitz_meta) <- schmitz_meta$sample
+schmitz_meta <- schmitz_meta[,-duplicated(colnames(schmitz_meta))]
 schmitz_b <- read.table("Masterthesis/Data/Bulk/DLBCL/Schmitz_counts/Schmitz_562.DLBCL_counts_norm_annotated.csv", sep = ";", header = TRUE)
 schmitz_genes <- schmitz_b$gene_symbol
 schmitz_bulk <- schmitz_b[,-c(1,2,3)]
