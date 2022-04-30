@@ -185,15 +185,18 @@ get_permuted_basis_statistics <- function(marker_genes, bulk_data, bulk_meta, sc
     sc_basis <- list(sc_basis)
   } ## if ensemble TRUE, dann muss sc_basis eine liste von den basen jeder sc reference sein
     
-    marker_genes_idx <- lapply(1:length(sc_basis), function(x) match(marker_genes$marker_genes, 
-                                                                     rownames(sc_basis[[x]]$basis.mvw)))
-    unpresent_marker_genes <- Reduce(union, lapply(marker_genes_idx, function(x) which(is.na(x))))
+  marker_genes_idx <- lapply(1:length(sc_basis), function(x) match(marker_genes$marker_genes, 
+                                                                   rownames(sc_basis[[x]]$basis.mvw)))
+  
+  unpresent_marker_genes <- Reduce(union, lapply(marker_genes_idx, function(x) which(is.na(x))))
+  if(length(unpresent_marker_genes) > 0){
     marker_genes$marker_genes <- marker_genes$marker_genes[-unpresent_marker_genes]
     marker_genes_idx <- lapply(1:length(sc_basis), function(x) match(marker_genes$marker_genes, 
                                                                      rownames(sc_basis[[x]]$basis.mvw)))
-
-    sampled_marker_genes <- lapply(1:length(sc_basis), function(x) sample(marker_genes$marker_genes))
-    sc_basis_sampled <- sc_basis
+  }
+   
+  sampled_marker_genes <- lapply(1:length(sc_basis), function(x) sample(marker_genes$marker_genes))
+  sc_basis_sampled <- sc_basis
   
   
   for (idx in 1:length(sc_basis)) {
@@ -247,6 +250,7 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, b
   rmsd_matrix_sampled <- sapply(statistics_sampled, function(x) x$rmsd_vec)
   
   ## Calculate p-value
+  if(is.numeric(pearson_matrix_sampled)){
   p_value_wy_pearson <- (sum(colMedians(abs(pearson_matrix_sampled)) >= median(abs(statistics_obs$pearson_vec)))+1)/(ncol(pearson_matrix_sampled)+1)
   p_value_wy_spearman <- (sum(colMedians(abs(spearman_matrix_sampled)) >= median(abs(statistics_obs$spearman_vec)))+1)/(ncol(spearman_matrix_sampled)+1)
   p_value_wy_mad <- (sum(colMedians(abs(mad_matrix_sampled)) <= median(abs(statistics_obs$mad_vec)))+1)/(ncol(mad_matrix_sampled)+1)
@@ -266,7 +270,13 @@ Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, b
                                    mAD = p_value_wy_mad_per_sample,
                                    RMSD = p_value_wy_rmsd_per_sample,
                                    row.names = rownames(decon_res$prop.est.mvw))
-  
+  } else {
+    p_value_per_sample <- NA
+    p_value_wy_pearson <- NA
+    p_value_wy_spearman <- NA
+    p_value_wy_mad <- NA
+    p_value_wy_rmsd <- NA
+  }
   message("Done.")
   
   decon_res_pval <- list("decon_res" = decon_res, 

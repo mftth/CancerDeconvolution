@@ -39,9 +39,21 @@ correlation_analysis <- function(decon_output, cell_types = NULL, clinical_chara
       ylab(paste0(colnames(aov_data)[celltype], " proportions", collapse = "")) +
       geom_signif(comparisons = comparison_list, map_signif_level=TRUE) +
       theme_bw() + theme(text = element_text(size = 11))  
-      })
+    })
     
-    return(list("aov_pvalue" = aov_pvalue, "aov_plots" = aov_plots))
+    violin_plots <- lapply(sign_pval, function(celltype){ 
+      ggplot(aov_data, aes(x = clinical_characteristic, y = aov_data[,celltype])) +
+        geom_violin() +
+        #scale_x_discrete() + 
+        xlab("clinical_characteristic") +
+        ylab(paste0(colnames(aov_data)[celltype], " proportions", collapse = "")) +
+        geom_signif(comparisons = comparison_list, map_signif_level=TRUE) +
+        theme_bw() + theme(text = element_text(size = 11))  +
+        stat_summary(fun=median, geom="point", size=2, color="red") +
+        geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4)
+    })
+    
+    return(list("aov_pvalue" = aov_pvalue, "aov_plots" = aov_plots, "violin_plots" = violin_plots))
       
   } else if(is.numeric(clinical_characteristic)){
     cor_ct_prop <- as.numeric(cor(ct_prop, clinical_characteristic))
