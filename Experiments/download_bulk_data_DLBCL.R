@@ -162,4 +162,37 @@ write.table(schmitz_meta, file = "~/Masterthesis/Data/Bulk/DLBCL/Schmitz_counts/
             sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
 saveRDS(schmitz_meta, file = "~/Masterthesis/Data/Bulk/DLBCL/Schmitz_counts/Schmitz_metadata.RDS")
 
+
+## Reddy 2017 (human RNA-seq)
+reddy_meta <- read.table("~/Masterthesis/Data/Bulk/DLBCL/Reddy_counts/coldata.csv", header = TRUE, sep = "\t")
+reddy_b <- read.table("~/Masterthesis/Data/Bulk/DLBCL/Reddy_counts/raw_counts.csv", header = TRUE, sep = ";")
+reddy_annotLookUp <- getBM(filters = "ensembl_gene_id",
+                           attributes = c("ensembl_gene_id", "hgnc_symbol"),
+                           values = reddy_b$X,
+                           mart = mart)
+reddy_genes <- intersect(reddy_b$X, reddy_annotLookUp$ensembl_gene_id)
+reddy_gene_idx <- match(reddy_genes, reddy_b$X)
+reddy_b <- reddy_b[reddy_gene_idx,]
+reddy_gene_idx <- match(reddy_genes, reddy_annotLookUp$ensembl_gene_id)
+reddy_annotLookUp <- reddy_annotLookUp[reddy_gene_idx,]
+all(reddy_b$X == reddy_annotLookUp$ensembl_gene_id)
+rownames(reddy_b) <- reddy_b$X
+reddy_max_var_genes <- mclapply(unique(reddy_annotLookUp$hgnc_symbol), 
+                                function(x) get_max_var_genes(reddy_b[,-1], gene = x, genes = reddy_annotLookUp$hgnc_symbol),
+                                mc.cores = 10)
+reddy_max_var_genes <- Reduce(c, reddy_max_var_genes)
+reddy_annotLookUp <- reddy_annotLookUp[match(reddy_max_var_genes, reddy_annotLookUp$ensembl_gene_id),]
+reddy_bulk <- reddy_b[match(reddy_max_var_genes, reddy_b$X),-1]
+all(rownames(reddy_bulk) == reddy_annotLookUp$ensembl_gene_id)
+rownames(reddy_bulk) <- reddy_annotLookUp$hgnc_symbol
+rownames(reddy_meta) <- reddy_meta$X
+all(colnames(reddy_bulk) == rownames(reddy_meta))
+write.table(reddy_bulk, file = "~/Masterthesis/Data/Bulk/DLBCL/Reddy_counts/Reddy_bulk.tsv",
+            sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
+saveRDS(reddy_bulk, file = "~/Masterthesis/Data/Bulk/DLBCL/Reddy_counts/Reddy_bulk.RDS")
+write.table(reddy_meta, file = "~/Masterthesis/Data/Bulk/DLBCL/Reddy_counts/Reddy_metadata.tsv",
+            sep = "\t", row.names = TRUE, col.names = TRUE, quote = FALSE)
+saveRDS(reddy_meta, file = "~/Masterthesis/Data/Bulk/DLBCL/Reddy_counts/Reddy_metadata.RDS")
+
+
 save.image("~/Masterthesis/Workspaces/download_bulk_data_DLBCL.RData")

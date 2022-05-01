@@ -17,23 +17,29 @@ source("~/Masterthesis/CancerDeconvolution/Scripts/Execute_MachineLearning.R")
 
 
 ## bulk data
-## Chapuy: 137 samples;  OS, OS_stat; Cluster; COO
+## Chapuy: 137 samples;  OS, OS_stat; Cluster; COO; IPI
 Chapuy_bulk <- readRDS("~/Masterthesis/Data/Bulk/DLBCL/Chapuy/Chapuy_bulk.RDS")
 Chapuy_meta <- readRDS("~/Masterthesis/Data/Bulk/DLBCL/Chapuy/Chapuy_metadata.RDS")
 ## Schleich: 109 samples; treatment response
 Schleich_bulk <- readRDS("~/Masterthesis/Data/Bulk/DLBCL/Schleich/Schleich_bulk.RDS")
 Schleich_meta <- readRDS("~/Masterthesis/Data/Bulk/DLBCL/Schleich/Schleich_metadata.RDS")
 rownames(Schleich_bulk) <- toupper(rownames(Schleich_bulk))
-## Schmitz 481 samples; survival; COO; treatment
+## Schmitz 481 samples; survival; COO; treatment, IPI
 Schmitz_bulk <- readRDS("~/Masterthesis/Data/Bulk/DLBCL/Schmitz_counts/Schmitz_bulk.RDS")
 Schmitz_meta <- readRDS("~/Masterthesis/Data/Bulk/DLBCL/Schmitz_counts/Schmitz_metadata.RDS")
+## Reddy samples 773; survival, COO, treatment response, IPI
+Reddy_bulk <- readRDS("~/Masterthesis/Data/Bulk/DLBCL/Reddy_counts/Reddy_bulk.RDS")
+Reddy_meta <- readRDS("~/Masterthesis/Data/Bulk/DLBCL/Reddy_counts/Reddy_metadata.RDS")
 
-bulk_list <- list(#"Chapuy" = Chapuy_bulk,
-                  #"Schleich" = Schleich_bulk,
-                  "Schmitz" = Schmitz_bulk)
-bulk_meta_list <- list(#"Chapuy" = Chapuy_meta,
-                       #"Schleich" = Schleich_meta,
-                       "Schmitz" = Schmitz_meta)
+
+bulk_list <- list("Chapuy" = Chapuy_bulk,
+                  "Schleich" = Schleich_bulk,
+                  "Schmitz" = Schmitz_bulk,
+                  "Reddy" = Reddy_bulk)
+bulk_meta_list <- list("Chapuy" = Chapuy_meta,
+                       "Schleich" = Schleich_meta,
+                       "Schmitz" = Schmitz_meta,
+                       "Reddy" = Reddy_meta)
 
 ## SeneSys scRNA-seq data
 # mouse_senescence <- read.table("~/SeneSys_scRNA_mouse/senescence_mouse.tsv", sep = "\t", header = TRUE, row.names = 1)
@@ -65,6 +71,7 @@ decon_dlbcl <- lapply(1:length(bulk_list),
                       function(x) readRDS(file = paste(res_path, "/", names(bulk_list)[x], 
                                                        "_decon.RDS", sep = "")))
 names(decon_dlbcl) <- names(bulk_list)
+
 schmitz_null_statistics <- sapply(decon_dlbcl$Schmitz$statistics_sampled, function(x) is.null(x))
 decon_dlbcl$Schmitz$statistics_sampled <- decon_dlbcl$Schmitz$statistics_sampled[!schmitz_null_statistics]
 
@@ -96,7 +103,7 @@ p_value_per_sample <- data.frame(Pearson = p_value_wy_pearson_per_sample,
 decon_dlbcl$Schmitz$p_value_per_sample <- p_value_per_sample
 
 ## plot p-values
-technology = c("microarray", "microarray", "RNA-seq")
+technology = c("microarray", "microarray", "RNA-seq", "RNA-seq")
 pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_dlbcl,
                                         pvalue_type = "Spearman", technology = technology) 
 pval_boxplot_pearson <- boxplot_pvalue(decon_output_list = decon_dlbcl,
@@ -109,7 +116,7 @@ pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_dlbcl,
 
 ## import ecotyper results
 ecotyper_results_path <- list.files("~/Ecotyper/Results2", full.names = TRUE)
-names(ecotyper_results_path) <- c("Chapuy", "Schleich", "Schmitz")
+names(ecotyper_results_path) <- c("Chapuy", "Reddy", "Schleich", "Schmitz")
 ecotyper <- lapply(ecotyper_results_path, function(x) {
   ecotyper_result <- unzip(x)
   ecotyper_bcell_assignment_file <- ecotyper_result[grep("B.cells_Cell_State_Assignment", ecotyper_result)]
@@ -121,6 +128,9 @@ Schleich_meta$ecotyper_bcell_state <- rep(NA, nrow(Schleich_meta))
 Schleich_meta$ecotyper_bcell_state <- ecotyper$Schleich$Cell.State[match(Schleich_meta$geo_accession, ecotyper$Schleich$ID)]
 Schmitz_meta$ecotyper_bcell_state <- rep(NA, nrow(Schmitz_meta))
 Schmitz_meta$ecotyper_bcell_state <- ecotyper$Schmitz$Cell.State[match(Schmitz_meta$sample, ecotyper$Schmitz$ID)]
+Reddy_meta$ecotyper_bcell_state <- rep(NA, nrow(Reddy_meta))
+Reddy_meta$ecotyper_bcell_state <- ecotyper$Reddy$Cell.State[match(Reddy_meta$X, ecotyper$Reddy$ID)]
+
 
 ## visualize ct props in heatmaps
 ## muss dafür na und ? entfernen
@@ -128,6 +138,7 @@ Schmitz_meta$ecotyper_bcell_state <- ecotyper$Schmitz$Cell.State[match(Schmitz_m
 ## for chapuy: coo und cluster, ecotyper bcell states
 ## for schleich: treatment and treatment response, ecotyper bcell states
 ## for schmitz: coo, treatment and IPI group, ecotyper bcell states
+## for reddy: coo, treatment response, ipi, ecotyper bcell states
 
 Chapuy_meta$`R-CHOP-like Chemo`[Chapuy_meta$`R-CHOP-like Chemo` == "na"] <- NA
 #Chapuy_meta$Cluster <- sapply(Chapuy_meta$Cluster, function(x) paste0("C", x, collapse = ""))
@@ -179,33 +190,81 @@ Schmitz_prop_heatmap <- heatmap_proportions(decon_output = decon_dlbcl$Schmitz,
                                              fontsize = 11, annotation_colors = Schmitz_annot_colors, clustering_method = "ward.D2")
 
 
+Reddy_meta$IPI_group <- rep(NA, nrow(Reddy_meta))
+Reddy_meta$IPI_group[Reddy_meta$IPI == "0" | Reddy_meta$IPI == "1"] <- "Low"
+Reddy_meta$IPI_group[Reddy_meta$IPI == "2" | Reddy_meta$IPI == "3"] <- "Intermediate"
+Reddy_meta$IPI_group[Reddy_meta$IPI == "4" | Reddy_meta$IPI == "5"] <- "High"
+Reddy_meta$IPI_group <- factor(Reddy_meta$IPI_group, levels = c("Low", "Intermediate", "High"))
+Reddy_meta$Response.to.initial.therapy[Reddy_meta$Response.to.initial.therapy == ""] <- NA
+#Reddy_meta$treatment_response <- rep(NA, nrow(Reddy_meta))
+Reddy_meta$Overall.Survival.years <- as.numeric(gsub(",", ".", Reddy_meta$Overall.Survival.years))
+Reddy_annot_colors <- list(COO = c(ABC = "#6eacf2", GCB = "#f8fc88", Unclassified ="#f683ad"),
+                           Treatment.response = c(Complete.response = "#6eacf2", No.response = "#f8fc88", 
+                                                  Partial.response ="#f683ad"),
+                           IPI = c(Low = "#77f387", Intermediate ="#f19e5b", High = "#d34545"),
+                           Bcell.state = c(S01 ="#8269ff",  S02 = "#ff69dc", S03 =  "#69f0ff",
+                                           S04 = "#69ff6b", S05 = "#ff6969"))
+Reddy_prop_heatmap <- heatmap_proportions(decon_output = decon_dlbcl$Reddy,
+                                            clinical_characteristics = data.frame("COO" = Reddy_meta$ABC.GCB..RNAseq.,
+                                                                                  "IPI" = Reddy_meta$IPI_group,
+                                                                                  "Treatment response" = Reddy_meta$Response.to.initial.therapy,
+                                                                                  "Bcell state" = Reddy_meta$ecotyper_bcell_state,
+                                                                                  row.names = rownames(Reddy_meta)),
+                                            fontsize = 11, annotation_colors = Reddy_annot_colors)#, clustering_method = "ward.D2")
+
+
+
 ## ANOVA
 chapuy_anova_coo <- correlation_analysis(decon_output = decon_dlbcl$Chapuy, 
                                          clinical_characteristic = Chapuy_meta$COO_byGEP)
+chapuy_coo_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
+                             clinical_characteristic_vec = Chapuy_meta$COO_byGEP)
 #chapuy_anova_cluster <- correlation_analysis(decon_output = decon_dlbcl$Chapuy, 
 #                                             clinical_characteristic = Chapuy_meta$Cluster)
+#chapuy_cluster_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
+#                             clinical_characteristic_vec = Chapuy_meta$Cluster)
 chapuy_anova_treatment <- correlation_analysis(decon_output = decon_dlbcl$Chapuy, 
                                                clinical_characteristic = Chapuy_meta$`R-CHOP-like Chemo`)
+chapuy_treatment_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
+                                   clinical_characteristic_vec = Chapuy_meta$`R-CHOP-like Chemo`)
 chapuy_anova_ipi <- correlation_analysis(decon_output = decon_dlbcl$Chapuy, 
                                          clinical_characteristic = as.character(Chapuy_meta$IPI))
+chapuy_ipi_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
+                             clinical_characteristic_vec = Chapuy_meta$IPI)
 chapuy_anova_bcellstate <- correlation_analysis(decon_output = decon_dlbcl$Chapuy, 
                                                 clinical_characteristic = as.character(Chapuy_meta$ecotyper_bcell_state))
+chapuy_bcellstate_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
+                                    clinical_characteristic_vec = Chapuy_meta$ecotyper_bcell_state)
+
 
 schleich_anova_treatment <- correlation_analysis(decon_output = decon_dlbcl$Schleich, 
                                                  clinical_characteristic = Schleich_meta$treatment)
+schleich_treatment_umap <- umap_plot(decon_output = decon_dlbcl$Schleich,
+                                     clinical_characteristic_vec = Schleich_meta$treatment) 
 schleich_anova_treatmentoutcome <- correlation_analysis(decon_output = decon_dlbcl$Schleich, 
                                                         clinical_characteristic = Schleich_meta$treatment_response)
+schleich_treatmentoutcome_umap <- umap_plot(decon_output = decon_dlbcl$Schleich,
+                                            clinical_characteristic_vec = Schleich_meta$treatment_response) 
 schleich_anova_bcellstate <- correlation_analysis(decon_output = decon_dlbcl$Schleich, 
                                                   clinical_characteristic = Schleich_meta$ecotyper_bcell_state)
+schleich_bcellstate_umap <- umap_plot(decon_output = decon_dlbcl$Schleich,
+                                      clinical_characteristic_vec = Schleich_meta$ecotyper_bcell_state) 
 ggarrange(schleich_anova_treatmentoutcome$aov_plots[[1]], 
           schleich_anova_treatmentoutcome$aov_plots[[2]]) 
 
+
 schmitz_anova_coo <- correlation_analysis(decon_output = decon_dlbcl$Schmitz, 
                                           clinical_characteristic = Schmitz_meta$Gene.Expression.Subgroup)
+schmitz_coo_umap <- umap_plot(decon_output = decon_dlbcl$Schmitz,
+                              clinical_characteristic_vec = Schmitz_meta$Gene.Expression.Subgroup) 
 schmitz_anova_ipi <- correlation_analysis(decon_output = decon_dlbcl$Schmitz, 
                                           clinical_characteristic = as.character(Schmitz_meta$IPI.Group))
+schmitz_ipi_umap <- umap_plot(decon_output = decon_dlbcl$Schmitz,
+                              clinical_characteristic_vec = Schmitz_meta$IPI.Group)
 schmitz_anova_bcellstate <- correlation_analysis(decon_output = decon_dlbcl$Schmitz, 
                                                  clinical_characteristic = Schmitz_meta$ecotyper_bcell_state)
+schmitz_bcellstate_umap <- umap_plot(decon_output = decon_dlbcl$Schmitz,
+                                     clinical_characteristic_vec = Schmitz_meta$ecotyper_bcell_state)
 schmitz_anova_ipi$aov_plots$ADR_OHT
 ggarrange(schmitz_anova_bcellstate$aov_plots[[1]], #so2 mit jedem und s1-s3, s3-s4, s3-s5
           schmitz_anova_bcellstate$aov_plots[[2]], #so2 mit jedem und s1-s3, s3-s4, s3-s5
@@ -255,3 +314,99 @@ schmitz_pfs_survival <- survival_analysis(decon_output = decon_dlbcl$Schmitz, OS
                                                                                 "Bcell state" = Schmitz_meta$ecotyper_bcell_state,
                                                                                 row.names = rownames(Schmitz_meta)))
 ## COO, IPI, bcell state
+
+
+reddy_OS <- Reddy_meta$Overall.Survival.years
+reddy_censored <- Reddy_meta$Censored
+reddy_os_survival <- survival_analysis(decon_output = decon_dlbcl$Reddy, OS = reddy_OS, censor = reddy_censored,
+                                       clinical_characteristics = data.frame("COO" = Reddy_meta$ABC.GCB..RNAseq.,
+                                                                             "IPI" = Reddy_meta$IPI_group,
+                                                                             "Treatment response" = Reddy_meta$Response.to.initial.therapy,
+                                                                             "Bcell state" = Reddy_meta$ecotyper_bcell_state,
+                                                                             row.names = rownames(Reddy_meta)))
+## 
+
+
+### ML
+## train a model on schleich for prediction of treatment response
+## baseline model: survarness genes
+## apply to schmitz and chapuy and see if survival was correctly predicted (1 nr, 2 rp, 3 res)
+
+## load suvarness gene set
+library(GSA)
+senesys_gmt <- GSA.read.gmt(filename = "~/SeneSys/Chapuy_Enrichment/SeneSys_gene_sets.gmt.tsv")
+names(senesys_gmt$genesets) <- senesys_gmt$geneset.names
+senesys_gmt$genesets <- lapply(senesys_gmt$genesets, function(x) {
+  x <- x[which(x != "")]
+})
+suvarness <- senesys_gmt$genesets$SUVARNESS
+suvarness_reduced <- intersect(suvarness, rownames(Schleich_bulk))
+suvarness_reduced <- intersect(suvarness_reduced, rownames(Schmitz_bulk))
+suvarness_reduced <- intersect(suvarness_reduced, rownames(Chapuy_bulk))
+
+
+schleich_prepped <- prepare_decon_res(p_value = TRUE, decon_res = decon_dlbcl$Schleich, 
+                                      clinical_char = Schleich_meta$treatment_response)
+schleich_ml_model <- train_ML_model(trainData = schleich_prepped)
+suvarness_prepped <- data.frame(t(Schleich_bulk[suvarness_reduced,]), "response" = Schleich_meta$treatment_response, 
+                                row.names = rownames(Schleich_meta))
+suvarness_prepped$response <- factor(suvarness_prepped$response)
+suvarness_baseline_model <- train_ML_model(trainData = suvarness_prepped)
+schleich_baseline_comparison <- boxplot_ML_sd(ml_model_list = 
+                                              list("Schleich" = schleich_ml_model$rf_model_whole,
+                                                   "SUVARness_baseline" = suvarness_baseline_model$rf_model_whole),
+                                         levels = c("NR", "RP", "RES"))
+schleich_baseline_comparison$boxplots + theme(legend.position="top")
+
+mean(schleich_baseline_comparison$boxplots$data$value[schleich_baseline_comparison$boxplots$data$Model == "Schleich" &
+                                                      schleich_baseline_comparison$boxplots$data$variable == "Sensitivity"])
+plot(schleich_ml_model$varimp_whole)
+plot(suvarness_baseline_model$varimp_whole)
+plot.roc(schleich_baseline_comparison$ROCcurves$Schleich, print.auc = TRUE, col = "red")
+plot.roc(schleich_baseline_comparison$ROCcurves$SUVARness_baseline, print.auc = TRUE,
+         print.auc.x = 0.5, print.auc.y = 0.4,col = "blue", add = TRUE)
+legend(0.5, 0.2, legend=c("Schleich", "SUVARness-baseline"),
+       col=c("red", "blue"), lt = 1,cex=0.8)
+
+## apply both models to chapuy and schmitz
+chapuy_prepped <- prepare_decon_res(p_value = TRUE, decon_res = decon_dlbcl$Chapuy, 
+                                    clinical_char = Chapuy_meta$IPI)
+chapuy_treatment_response_prediction1 <- predict(schleich_ml_model$rf_model_whole, 
+                                                 chapuy_prepped[,-ncol(chapuy_prepped)])
+chapuy_prepped2 <- data.frame(t(Chapuy_bulk[suvarness,]), row.names = rownames(Chapuy_meta))
+chapuy_treatment_response_prediction2 <- predict(suvarness_baseline_model$rf_model_whole, 
+                                                  chapuy_prepped2)
+
+schmitz_prepped <- prepare_decon_res(p_value = TRUE, decon_res = decon_dlbcl$Schmitz, 
+                                    clinical_char = Schmitz_meta$IPI.Group)
+schmitz_treatment_response_prediction1 <- predict(schleich_ml_model$rf_model_whole, 
+                                                 schmitz_prepped[,-ncol(schmitz_prepped)])
+schmitz_prepped2 <- data.frame(t(Schmitz_bulk[suvarness,]), row.names = rownames(Schmitz_meta))
+schmitz_treatment_response_prediction2 <- predict(suvarness_baseline_model$rf_model_whole, 
+                                                  schmitz_prepped2)
+
+Chapuy_meta$pred_treatment_response <- chapuy_treatment_response_prediction1
+Chapuy_meta$pred_treatment_response2 <- chapuy_treatment_response_prediction2
+Schmitz_meta$pred_treatment_response <- schmitz_treatment_response_prediction1
+
+
+## repeat survival analysis
+chapuy_os_survival2 <- survival_analysis(decon_output = decon_dlbcl$Chapuy, OS = chapuy_OS, censor = chapuy_os_zensur, 
+                                        clinical_characteristics = data.frame("treatment_response_schleich" = Chapuy_meta$pred_treatment_response, 
+                                                                              "treatment_response_baseline" = Chapuy_meta$pred_treatment_response2, 
+                                                                              row.names = rownames(Chapuy_meta)))
+chapuy_pfs_survival2 <- survival_analysis(decon_output = decon_dlbcl$Chapuy, OS = chapuy_PFS, censor = chapuy_pfs_zensur, 
+                                         clinical_characteristics = data.frame("treatment_response_schleich" = Chapuy_meta$pred_treatment_response, 
+                                                                               "treatment_response_baseline" = Chapuy_meta$pred_treatment_response2,
+                                                                               row.names = rownames(Chapuy_meta)))
+
+schmitz_pfs_survival2 <- survival_analysis(decon_output = decon_dlbcl$Schmitz, OS = schmitz_PFS, censor = schmitz_pfs_zensur,
+                                          clinical_characteristics = data.frame("treatment_response_schleich" = Schmitz_meta$pred_treatment_response,
+                                                                                row.names = rownames(Schmitz_meta)))
+
+
+umap_plot(decon_output = decon_dlbcl$Schmitz, clinical_characteristic_vec = Schmitz_meta$pred_treatment_response)# + 
+  stat_ellipse()
+umap_plot(decon_output = decon_dlbcl$Chapuy, clinical_characteristic_vec = Chapuy_meta$pred_treatment_response) + 
+  stat_ellipse()
+umap_plot(decon_output = decon_dlbcl$Chapuy, clinical_characteristic_vec = Chapuy_meta$pred_treatment_response2) 

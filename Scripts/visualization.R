@@ -13,6 +13,7 @@ library(reshape2)
 library(pheatmap)
 library(pROC)
 library(ggpubr)
+library(umap)
 
 ## 3) cell type proportions plots (as heatmap or bar plots)
 heatmap_proportions <- function(decon_output, clinical_characteristics = NA, ...){
@@ -137,6 +138,30 @@ heatmap_corr_genes <- function(decon_output = NULL, bulk_data, clinical_characte
                                  annotation_col = annotation_df, ...)
   
   return(heatmap_corr_genes)
+}
+
+
+## UMAP plot
+## for clustering of bulk samples based on predicted cell type proportions
+## do the cell type proportions separate the clinical characteristics into distinct clusters?
+umap_plot <- function(decon_output, clinical_characteristic_vec, cell_types = NULL){
+  # clinical_characteristics_vec is a character vector of length = nrow(decon_output$decon_res$prop.est.mvw)
+  if(!is.null(cell_types)){
+    decon_res <- decon_output$decon_res$prop.est.mvw[,cell_types]
+  } else {
+    decon_res <- decon_output$decon_res$prop.est.mvw
+  }
+  
+  decon_umap <- umap(decon_res)
+  decon_umap_df <- data.frame(decon_umap$layout, 
+                              "clinical_characteristic" = clinical_characteristic_vec,
+                              row.names = rownames(decon_res))
+  
+  umap.plot <- ggplot(decon_umap_df, aes(x = X1, y = X2, color = clinical_characteristic)) +
+    geom_point() + xlab("UMAP 1") + ylab("UMAP 2") + theme_bw() + 
+    theme(legend.position="top") + labs(color = "Clinical characteristic") 
+    #stat_ellipse()
+  return(umap.plot)
 }
 
 
