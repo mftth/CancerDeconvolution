@@ -101,13 +101,15 @@ p_value_per_sample <- data.frame(Pearson = p_value_wy_pearson_per_sample,
                                  RMSD = p_value_wy_rmsd_per_sample,
                                  row.names = rownames(decon_dlbcl$Schmitz$decon_res$prop.est.mvw))
 decon_dlbcl$Schmitz$p_value_per_sample <- p_value_per_sample
+decon_dlbcl <- decon_dlbcl[1:3]
 
 ## plot p-values
-technology = c("microarray", "microarray", "RNA-seq", "RNA-seq")
+technology = c("microarray", "microarray", "RNA-seq")#, "RNA-seq")
 pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_dlbcl,
                                         pvalue_type = "Spearman", technology = technology) 
 pval_boxplot_pearson <- boxplot_pvalue(decon_output_list = decon_dlbcl,
-                                       pvalue_type = "Pearson", technology = technology) 
+                                       pvalue_type = "Pearson", technology = technology) + 
+  theme(plot.title = element_text(size=12)) +  theme(legend.position="top")
 pval_boxplot_mad <- boxplot_pvalue(decon_output_list = decon_dlbcl,
                                    pvalue_type = "mAD", technology = technology) 
 pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_dlbcl,
@@ -128,8 +130,8 @@ Schleich_meta$ecotyper_bcell_state <- rep(NA, nrow(Schleich_meta))
 Schleich_meta$ecotyper_bcell_state <- ecotyper$Schleich$Cell.State[match(Schleich_meta$geo_accession, ecotyper$Schleich$ID)]
 Schmitz_meta$ecotyper_bcell_state <- rep(NA, nrow(Schmitz_meta))
 Schmitz_meta$ecotyper_bcell_state <- ecotyper$Schmitz$Cell.State[match(Schmitz_meta$sample, ecotyper$Schmitz$ID)]
-Reddy_meta$ecotyper_bcell_state <- rep(NA, nrow(Reddy_meta))
-Reddy_meta$ecotyper_bcell_state <- ecotyper$Reddy$Cell.State[match(Reddy_meta$X, ecotyper$Reddy$ID)]
+#Reddy_meta$ecotyper_bcell_state <- rep(NA, nrow(Reddy_meta))
+#Reddy_meta$ecotyper_bcell_state <- ecotyper$Reddy$Cell.State[match(Reddy_meta$X, ecotyper$Reddy$ID)]
 
 
 ## visualize ct props in heatmaps
@@ -161,7 +163,7 @@ Chapuy_prop_heatmap <- heatmap_proportions(decon_output = decon_dlbcl$Chapuy,
                                                                                  "IPI" = Chapuy_meta$IPI,
                                                                                  "Bcell state" = Chapuy_meta$ecotyper_bcell_state,
                                                                                  row.names = rownames(Chapuy_meta)),
-                                           fontsize = 11, annotation_colors = Chapuy_annot_colors)
+                                           fontsize_rows = 11, angle_col = 45, annotation_colors = Chapuy_annot_colors)
 
 
 Schleich_annot_colors <- list(treatment_response = c(NR = "#6eacf2", RES = "#f8fc88", RP ="#f683ad"),
@@ -169,11 +171,11 @@ Schleich_annot_colors <- list(treatment_response = c(NR = "#6eacf2", RES = "#f8f
                               Bcell.state = c(S01 ="#8269ff",  S02 = "#ff69dc", S03 =  "#69f0ff",
                                               S04 = "#69ff6b", S05 = "#ff6969"))
 Schleich_prop_heatmap <- heatmap_proportions(decon_output = decon_dlbcl$Schleich,
-                                             clinical_characteristics = data.frame("treatment_response" = Schleich_meta$treatment_response,
+                                             clinical_characteristics = data.frame("t.response" = Schleich_meta$treatment_response,
                                                                                    "treatment" = Schleich_meta$treatment,
                                                                                    "Bcell state" = Schleich_meta$ecotyper_bcell_state,
                                                                                    row.names = rownames(Schleich_meta)),
-                                             fontsize = 11, annotation_colors = Schleich_annot_colors, clustering_method = "average")
+                                             fontsize = 11, angle_col = 45, annotation_colors = Schleich_annot_colors, clustering_method = "average")
 
 
 Schmitz_annot_colors <- list(COO = c(ABC = "#6eacf2", GCB = "#f8fc88", Unclass ="#f683ad"),
@@ -187,30 +189,30 @@ Schmitz_prop_heatmap <- heatmap_proportions(decon_output = decon_dlbcl$Schmitz,
                                                                                   "IPI" = Schmitz_meta$IPI.Group,
                                                                                   "Bcell state" = Schmitz_meta$ecotyper_bcell_state,
                                                                                    row.names = rownames(Schmitz_meta)),
-                                             fontsize = 11, annotation_colors = Schmitz_annot_colors, clustering_method = "ward.D2")
+                                             fontsize = 11, angle_col = 45, annotation_colors = Schmitz_annot_colors, clustering_method = "ward.D2")
 
 
-Reddy_meta$IPI_group <- rep(NA, nrow(Reddy_meta))
-Reddy_meta$IPI_group[Reddy_meta$IPI == "0" | Reddy_meta$IPI == "1"] <- "Low"
-Reddy_meta$IPI_group[Reddy_meta$IPI == "2" | Reddy_meta$IPI == "3"] <- "Intermediate"
-Reddy_meta$IPI_group[Reddy_meta$IPI == "4" | Reddy_meta$IPI == "5"] <- "High"
-Reddy_meta$IPI_group <- factor(Reddy_meta$IPI_group, levels = c("Low", "Intermediate", "High"))
-Reddy_meta$Response.to.initial.therapy[Reddy_meta$Response.to.initial.therapy == ""] <- NA
-#Reddy_meta$treatment_response <- rep(NA, nrow(Reddy_meta))
-Reddy_meta$Overall.Survival.years <- as.numeric(gsub(",", ".", Reddy_meta$Overall.Survival.years))
-Reddy_annot_colors <- list(COO = c(ABC = "#6eacf2", GCB = "#f8fc88", Unclassified ="#f683ad"),
-                           Treatment.response = c(Complete.response = "#6eacf2", No.response = "#f8fc88", 
-                                                  Partial.response ="#f683ad"),
-                           IPI = c(Low = "#77f387", Intermediate ="#f19e5b", High = "#d34545"),
-                           Bcell.state = c(S01 ="#8269ff",  S02 = "#ff69dc", S03 =  "#69f0ff",
-                                           S04 = "#69ff6b", S05 = "#ff6969"))
-Reddy_prop_heatmap <- heatmap_proportions(decon_output = decon_dlbcl$Reddy,
-                                            clinical_characteristics = data.frame("COO" = Reddy_meta$ABC.GCB..RNAseq.,
-                                                                                  "IPI" = Reddy_meta$IPI_group,
-                                                                                  "Treatment response" = Reddy_meta$Response.to.initial.therapy,
-                                                                                  "Bcell state" = Reddy_meta$ecotyper_bcell_state,
-                                                                                  row.names = rownames(Reddy_meta)),
-                                            fontsize = 11, annotation_colors = Reddy_annot_colors)#, clustering_method = "ward.D2")
+# Reddy_meta$IPI_group <- rep(NA, nrow(Reddy_meta))
+# Reddy_meta$IPI_group[Reddy_meta$IPI == "0" | Reddy_meta$IPI == "1"] <- "Low"
+# Reddy_meta$IPI_group[Reddy_meta$IPI == "2" | Reddy_meta$IPI == "3"] <- "Intermediate"
+# Reddy_meta$IPI_group[Reddy_meta$IPI == "4" | Reddy_meta$IPI == "5"] <- "High"
+# Reddy_meta$IPI_group <- factor(Reddy_meta$IPI_group, levels = c("Low", "Intermediate", "High"))
+# Reddy_meta$Response.to.initial.therapy[Reddy_meta$Response.to.initial.therapy == ""] <- NA
+# #Reddy_meta$treatment_response <- rep(NA, nrow(Reddy_meta))
+# Reddy_meta$Overall.Survival.years <- as.numeric(gsub(",", ".", Reddy_meta$Overall.Survival.years))
+# Reddy_annot_colors <- list(COO = c(ABC = "#6eacf2", GCB = "#f8fc88", Unclassified ="#f683ad"),
+#                            Treatment.response = c("Complete response" = "#6eacf2", "No response" = "#f8fc88", 
+#                                                   "Partial response" ="#f683ad"),
+#                            IPI = c(Low = "#77f387", Intermediate ="#f19e5b", High = "#d34545"),
+#                            Bcell.state = c(S01 ="#8269ff",  S02 = "#ff69dc", S03 =  "#69f0ff",
+#                                            S04 = "#69ff6b", S05 = "#ff6969"))
+# Reddy_prop_heatmap <- heatmap_proportions(decon_output = decon_dlbcl$Reddy,
+#                                             clinical_characteristics = data.frame("COO" = Reddy_meta$ABC.GCB..RNAseq.,
+#                                                                                   "IPI" = Reddy_meta$IPI_group,
+#                                                                                   "Treatment response" = Reddy_meta$Response.to.initial.therapy,
+#                                                                                   "Bcell state" = Reddy_meta$ecotyper_bcell_state,
+#                                                                                   row.names = rownames(Reddy_meta)),
+#                                             fontsize = 11, annotation_colors = Reddy_annot_colors)#, clustering_method = "ward.D2")
 
 
 
@@ -268,7 +270,7 @@ schmitz_bcellstate_umap <- umap_plot(decon_output = decon_dlbcl$Schmitz,
 schmitz_anova_ipi$aov_plots$ADR_OHT
 ggarrange(schmitz_anova_bcellstate$aov_plots[[1]], #so2 mit jedem und s1-s3, s3-s4, s3-s5
           schmitz_anova_bcellstate$aov_plots[[2]], #so2 mit jedem und s1-s3, s3-s4, s3-s5
-          schmitz_anova_bcellstate$aov_plots[[3]], nrow = 3) # s2-s3, s2-s4, s1-s3, s3-s5
+          schmitz_anova_bcellstate$aov_plots[[3]], nrow =  3) # s2-s3, s2-s4, s1-s3, s3-s5
 
 
 ## survival analysis
@@ -316,14 +318,14 @@ schmitz_pfs_survival <- survival_analysis(decon_output = decon_dlbcl$Schmitz, OS
 ## COO, IPI, bcell state
 
 
-reddy_OS <- Reddy_meta$Overall.Survival.years
-reddy_censored <- Reddy_meta$Censored
-reddy_os_survival <- survival_analysis(decon_output = decon_dlbcl$Reddy, OS = reddy_OS, censor = reddy_censored,
-                                       clinical_characteristics = data.frame("COO" = Reddy_meta$ABC.GCB..RNAseq.,
-                                                                             "IPI" = Reddy_meta$IPI_group,
-                                                                             "Treatment response" = Reddy_meta$Response.to.initial.therapy,
-                                                                             "Bcell state" = Reddy_meta$ecotyper_bcell_state,
-                                                                             row.names = rownames(Reddy_meta)))
+# reddy_OS <- Reddy_meta$Overall.Survival.years
+# reddy_censored <- Reddy_meta$Censored
+# reddy_os_survival <- survival_analysis(decon_output = decon_dlbcl$Reddy, OS = reddy_OS, censor = reddy_censored,
+#                                        clinical_characteristics = data.frame("COO" = Reddy_meta$ABC.GCB..RNAseq.,
+#                                                                              "IPI" = Reddy_meta$IPI_group,
+#                                                                              "Treatment response" = Reddy_meta$Response.to.initial.therapy,
+#                                                                              "Bcell state" = Reddy_meta$ecotyper_bcell_state,
+#                                                                              row.names = rownames(Reddy_meta)))
 ## 
 
 
@@ -392,17 +394,38 @@ Schmitz_meta$pred_treatment_response <- schmitz_treatment_response_prediction1
 
 ## repeat survival analysis
 chapuy_os_survival2 <- survival_analysis(decon_output = decon_dlbcl$Chapuy, OS = chapuy_OS, censor = chapuy_os_zensur, 
-                                        clinical_characteristics = data.frame("treatment_response_schleich" = Chapuy_meta$pred_treatment_response, 
-                                                                              "treatment_response_baseline" = Chapuy_meta$pred_treatment_response2, 
+                                        clinical_characteristics = data.frame("response_pred_schleich" = Chapuy_meta$pred_treatment_response, 
+                                                                              "response_pred_baseline" = Chapuy_meta$pred_treatment_response2, 
                                                                               row.names = rownames(Chapuy_meta)))
+ggpar(chapuy_os_survival2$single_kp$response_pred_schleich, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+ggpar(chapuy_os_survival2$single_kp$response_pred_baseline, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+
 chapuy_pfs_survival2 <- survival_analysis(decon_output = decon_dlbcl$Chapuy, OS = chapuy_PFS, censor = chapuy_pfs_zensur, 
-                                         clinical_characteristics = data.frame("treatment_response_schleich" = Chapuy_meta$pred_treatment_response, 
-                                                                               "treatment_response_baseline" = Chapuy_meta$pred_treatment_response2,
+                                         clinical_characteristics = data.frame("response_pred_schleich" = Chapuy_meta$pred_treatment_response, 
+                                                                               "response_pred_baseline" = Chapuy_meta$pred_treatment_response2,
                                                                                row.names = rownames(Chapuy_meta)))
+ggpar(chapuy_pfs_survival2$single_kp$response_pred_schleich, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+ggpar(chapuy_pfs_survival2$single_kp$response_pred_baseline, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
 
 schmitz_pfs_survival2 <- survival_analysis(decon_output = decon_dlbcl$Schmitz, OS = schmitz_PFS, censor = schmitz_pfs_zensur,
-                                          clinical_characteristics = data.frame("treatment_response_schleich" = Schmitz_meta$pred_treatment_response,
+                                          clinical_characteristics = data.frame("response_pred_schleich" = Schmitz_meta$pred_treatment_response,
                                                                                 row.names = rownames(Schmitz_meta)))
+ggpar(schmitz_pfs_survival2$single_kp$response_pred_schleich, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in years")
 
 
 umap_plot(decon_output = decon_dlbcl$Schmitz, clinical_characteristic_vec = Schmitz_meta$pred_treatment_response)# + 
