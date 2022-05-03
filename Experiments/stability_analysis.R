@@ -2,7 +2,7 @@
 ## stability analysis of SCDC
 
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
-source("~/Masterthesis/CancerDeconvolution/Scripts/visualization.R")
+#source("~/Masterthesis/CancerDeconvolution/Scripts/visualization.R")
 
 set.seed(25)
 
@@ -59,9 +59,9 @@ pseudo_bulk_data <- pseudo_bulk$pseudo_eset@assayData$exprs
 
 
 #pseudo_bulk_data_noise <- add_noise(matr = pseudo_bulk_data, times = 10)
-pseudo_bulk_data_noise <- add_noise_iteratively(matr = pseudo_bulk_data, times = 100)
-names(pseudo_bulk_data_noise) <- c(paste("00", 1:9, sep = ""), paste("0", 10:99, sep = ""), "100")
-pseudo_bulk_data_noise_red <- pseudo_bulk_data_noise[c(1,seq(5, 100, 5))]
+pseudo_bulk_data_noise <- add_noise_iteratively(matr = pseudo_bulk_data, times = 1000)
+names(pseudo_bulk_data_noise) <- c(paste("000", 1:9, sep = ""), paste("00", 10:99, sep = ""), paste("0", 100:999, sep = ""), "1000")
+pseudo_bulk_data_noise_red <- pseudo_bulk_data_noise[c(1,seq(50, 1000, 50))]
 
 #######################################
 ## for each matrix (i.e. original and noised ones) perform decon with framework
@@ -86,20 +86,30 @@ spearman_pval_all$sample <- colnames(pseudo_bulk_data)
 spearman_pval_all <- melt(spearman_pval_all)
 spearman_pval_all$value <- -log10(spearman_pval_all$value)
 #spearman_pval_all$value <- rev(spearman_pval_all$value)
-spearman_pval_all_plot <- ggplot(spearman_pval_all, aes(x=variable, y=value)) + 
+pdf(file = "~/Masterthesis/CancerDeconvolution/Results/stability_analysis/try2.pdf",   # The directory you want to save the file in
+    width = 4, # The width of the plot in inches
+    height = 4)
+#spearman_pval_all_plot <- 
+ggplot(spearman_pval_all, aes(x=variable, y=value)) + 
   geom_boxplot() + ylab("SCDC -log10(Spearman p-value)") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red") 
+dev.off()
 
 pearson_pval_all <- as.data.frame(sapply(pseudo_decon_all, function(x) x$p_value_per_sample$Pearson))
 pearson_pval_all$sample <- colnames(pseudo_bulk_data)
 pearson_pval_all <- melt(pearson_pval_all)
 pearson_pval_all$value <- -log10(pearson_pval_all$value)
 #pearson_pval_all$value <- rev(pearson_pval_all$value)
-pearson_pval_all_plot <- ggplot(pearson_pval_all, aes(x=variable, y=value)) + 
+pdf(file = "~/Masterthesis/CancerDeconvolution/Results/stability_analysis/try2.pdf",   # The directory you want to save the file in
+    width = 4, # The width of the plot in inches
+    height = 4)
+#pearson_pval_all_plot <- 
+  ggplot(pearson_pval_all, aes(x=variable, y=value)) + 
   geom_boxplot() + ylab("SCDC -log10(Pearson p-value)") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
+dev.off()
 
 mad_pval_all <- as.data.frame(sapply(pseudo_decon_all, function(x) x$p_value_per_sample$mAD))
 mad_pval_all$sample <- colnames(pseudo_bulk_data)
@@ -111,16 +121,22 @@ mad_pval_all_plot <- ggplot(mad_pval_all, aes(x=variable, y=value)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
 
+
 rmsd_pval_all <- as.data.frame(sapply(pseudo_decon_all, function(x) x$p_value_per_sample$RMSD))
 rmsd_pval_all$sample <- colnames(pseudo_bulk_data)
 rmsd_pval_all <- melt(rmsd_pval_all)
 rmsd_pval_all$value <- -log10(rmsd_pval_all$value)
 #rmsd_pval_all$value <- rev(rmsd_pval_all$value)
-rmsd_pval_all_plot <- ggplot(rmsd_pval_all, aes(x=variable, y=value)) + 
+pdf(file = "~/Masterthesis/CancerDeconvolution/Results/stability_analysis/try.pdf",   # The directory you want to save the file in
+    width = 4, # The width of the plot in inches
+    height = 4)
+#rmsd_pval_all_plot <- 
+  ggplot(rmsd_pval_all, aes(x=variable, y=value)) + 
   geom_boxplot() + ylab("SCDC -log10(RMSD p-value)") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "red")
-
+dev.off()
+##
 
 pearson_scdc <- sapply(pseudo_decon_all, function(x) x$statistics_observed$pearson_vec)
 rmsd_scdc <- sapply(pseudo_decon_all, function(x) x$statistics_observed$rmsd_vec)
@@ -131,17 +147,28 @@ pearson_scdc <- as.data.frame(pearson_scdc)
 pearson_scdc$sample <- colnames(pseudo_bulk_data)
 pearson_scdc <- melt(pearson_scdc)
 #pearson_scdc$value <- rev(pearson_scdc$value)
-pearson_scdc_plot <- ggplot(pearson_scdc, aes(x=variable, y=value)) + 
+pdf(file = "~/Masterthesis/CancerDeconvolution/Results/stability_analysis/try2.pdf",   # The directory you want to save the file in
+    width = 4, # The width of the plot in inches
+    height = 4)
+#pearson_scdc_plot <- 
+ggplot(pearson_scdc, aes(x=variable, y=value)) + 
   geom_boxplot() + ylab("SCDC Pearson correlation") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+dev.off()
+
 
 rmsd_scdc <- as.data.frame(rmsd_scdc)
 rmsd_scdc$sample <- colnames(pseudo_bulk_data)
 rmsd_scdc <- melt(rmsd_scdc)
 #rmsd_scdc$value <- rev(rmsd_scdc$value)
-rmsd_scdc_plot <- ggplot(rmsd_scdc, aes(x=variable, y=value)) + 
+pdf(file = "~/Masterthesis/CancerDeconvolution/Results/stability_analysis/try2.pdf",   # The directory you want to save the file in
+    width = 4, # The width of the plot in inches
+    height = 4)
+#rmsd_scdc_plot <- 
+ggplot(rmsd_scdc, aes(x=variable, y=value)) + 
   geom_boxplot() + ylab("SCDC RMSD") +  xlab("noise iteration") + theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+dev.off()
 
 spearman_scdc <- as.data.frame(spearman_scdc)
 spearman_scdc$sample <- colnames(pseudo_bulk_data)
@@ -221,7 +248,7 @@ save.image("~/Masterthesis/Workspaces/stability_analysis.RData")
 
 #######################################
 library(ggplot2)
-library(ggpubr)
+#library(ggpubr)
 
 ggarrange(rmsd_pval_all_plot,
           pearson_pval_all_plot, 

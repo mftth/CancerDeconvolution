@@ -251,8 +251,18 @@ schleich_anova_bcellstate <- correlation_analysis(decon_output = decon_dlbcl$Sch
                                                   clinical_characteristic = Schleich_meta$ecotyper_bcell_state)
 schleich_bcellstate_umap <- umap_plot(decon_output = decon_dlbcl$Schleich,
                                       clinical_characteristic_vec = Schleich_meta$ecotyper_bcell_state) 
-ggarrange(schleich_anova_treatmentoutcome$aov_plots[[1]], 
-          schleich_anova_treatmentoutcome$aov_plots[[2]]) 
+pdf(width = 5, height = 5)
+schleich_anova_treatmentoutcome$aov_plots[[1]] + 
+  geom_signif(comparisons = schleich_anova_treatmentoutcome$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(schleich_anova_treatmentoutcome$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 5, height = 5)
+schleich_anova_treatmentoutcome$aov_plots[[2]] +
+  geom_signif(comparisons = schleich_anova_treatmentoutcome$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(schleich_anova_treatmentoutcome$comparison_list)*0.05),0.05)) 
+dev.off()
 
 
 schmitz_anova_coo <- correlation_analysis(decon_output = decon_dlbcl$Schmitz, 
@@ -267,10 +277,33 @@ schmitz_anova_bcellstate <- correlation_analysis(decon_output = decon_dlbcl$Schm
                                                  clinical_characteristic = Schmitz_meta$ecotyper_bcell_state)
 schmitz_bcellstate_umap <- umap_plot(decon_output = decon_dlbcl$Schmitz,
                                      clinical_characteristic_vec = Schmitz_meta$ecotyper_bcell_state)
-schmitz_anova_ipi$aov_plots$ADR_OHT
-ggarrange(schmitz_anova_bcellstate$aov_plots[[1]], #so2 mit jedem und s1-s3, s3-s4, s3-s5
-          schmitz_anova_bcellstate$aov_plots[[2]], #so2 mit jedem und s1-s3, s3-s4, s3-s5
-          schmitz_anova_bcellstate$aov_plots[[3]], nrow =  3) # s2-s3, s2-s4, s1-s3, s3-s5
+pdf(width = 5, height = 5)
+schmitz_anova_ipi$aov_plots$ADR_OHT + 
+  geom_signif(comparisons = schmitz_anova_ipi$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(schmitz_anova_ipi$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 5, height = 5)
+schmitz_anova_bcellstate$aov_plots$ADR_OHT + 
+  geom_signif(comparisons = schmitz_anova_bcellstate$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(schmitz_anova_bcellstate$comparison_list)*0.08),0.08)) 
+dev.off()
+pdf(width = 5, height = 5)
+schmitz_anova_bcellstate$aov_plots$ADR + 
+  geom_signif(comparisons = schmitz_anova_bcellstate$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(schmitz_anova_bcellstate$comparison_list)*0.08),0.08)) 
+dev.off()
+pdf(width = 5, height = 5)
+schmitz_anova_bcellstate$aov_plots$PS + 
+  geom_signif(comparisons = schmitz_anova_bcellstate$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(schmitz_anova_bcellstate$comparison_list)*0.08),0.08)) 
+dev.off()
+#ggarrange(schmitz_anova_bcellstate$aov_plots[[1]], #so2 mit jedem und s1-s3, s3-s4, s3-s5
+#          schmitz_anova_bcellstate$aov_plots[[2]], #so2 mit jedem und s1-s3, s3-s4, s3-s5
+#          schmitz_anova_bcellstate$aov_plots[[3]], nrow =  3) # s2-s3, s2-s4, s1-s3, s3-s5
 
 
 ## survival analysis
@@ -293,7 +326,25 @@ chapuy_os_survival <- survival_analysis(decon_output = decon_dlbcl$Chapuy, OS = 
                                                                               "IPI" = Chapuy_meta$IPI,
                                                                               "Bcell state" = Chapuy_meta$ecotyper_bcell_state,
                                                                               row.names = rownames(Chapuy_meta)))
-# IPI, adr-oht, adr, coo
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(chapuy_os_survival$single_kp$ADR_high_low , 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(chapuy_os_survival$single_kp$ADR_OHT_high_low , 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(chapuy_os_survival$single_kp$IPI, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
+
 chapuy_pfs_survival <- survival_analysis(decon_output = decon_dlbcl$Chapuy, OS = chapuy_PFS, censor = chapuy_pfs_zensur, 
                                          clinical_characteristics = data.frame("COO" = Chapuy_meta$COO_byGEP, 
                                                                                #"cluster" = Chapuy_meta$Cluster,
@@ -301,11 +352,24 @@ chapuy_pfs_survival <- survival_analysis(decon_output = decon_dlbcl$Chapuy, OS =
                                                                                "IPI" = Chapuy_meta$IPI,
                                                                                "Bcell state" = Chapuy_meta$ecotyper_bcell_state,
                                                                                row.names = rownames(Chapuy_meta)))
-## IPI, adr, adroht, bcell state
-ggpar(chapuy_os_survival$single_kp$IPI, 
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(chapuy_pfs_survival$single_kp$ADR_high_low , 
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
-      xlab = "Time in months") # + guides(colour = guide_legend(nrow = 3))
+      xlab = "Time in months")
+dev.off()
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(chapuy_pfs_survival$single_kp$ADR_OHT_high_low , 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(chapuy_pfs_survival$single_kp$IPI, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
 
 
 schmitz_PFS <- Schmitz_meta$`Progression_Free Survival _PFS_ Time _yrs`
@@ -315,7 +379,36 @@ schmitz_pfs_survival <- survival_analysis(decon_output = decon_dlbcl$Schmitz, OS
                                                                                 "IPI" = Schmitz_meta$IPI.Group,
                                                                                 "Bcell state" = Schmitz_meta$ecotyper_bcell_state,
                                                                                 row.names = rownames(Schmitz_meta)))
-## COO, IPI, bcell state
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(schmitz_pfs_survival$single_kp$ADR_high_low , 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(schmitz_pfs_survival$single_kp$ADR_OHT_high_low , 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(schmitz_pfs_survival$single_kp$IPI, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(schmitz_pfs_survival$single_kp$COO , 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
+pdf(onefile = FALSE, width = 8, height = 6.08)
+ggpar(schmitz_pfs_survival$single_kp$Bcell.state, 
+      font.main = c(12), font.x = c(14), font.y = c(14),
+      font.caption = c(12), font.legend = c(11),font.tickslab = c(12), 
+      xlab = "Time in months")
+dev.off()
 
 
 # reddy_OS <- Reddy_meta$Overall.Survival.years

@@ -212,11 +212,16 @@ Guo_mki67 <- factor(Guo_mki67, levels = c("MKI67_low", "MKI67_medium", "MKI67_hi
 guo_annot_colors <- list(tumor_subtype = c(Basal = "#f683ad", Classical = "#f8fc88", Hybrid ="#6eacf2"),
                          MKI67 = c(MKI67_low = "#77f387",  MKI67_medium = "#f19e5b", MKI67_high = "#d34545"))
 
+
 baron_Guo_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$Guo,
                                               clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description, 
                                                                                     "MKI67" = Guo_mki67,
                                                                                     row.names = rownames(Guo_meta)),
                                               annotation_colors = guo_annot_colors, fontsize = 11)
+pdf(width = 4, height = 4)
+barplot_proportions(decon_output = decon_baron$Guo,
+                    clinical_characteristics_vec =  Guo_meta$description)
+dev.off()
 tosti_Guo_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Guo,
                                               clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
                                                                                     "MKI67" = Guo_mki67,
@@ -256,6 +261,10 @@ baron_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$PAAD,
                                                                                      "MKI67" = PAAD_mki67,
                                                                                      row.names = rownames(PAAD_meta)), 
                                                clustering_method = "ward.D2", annotation_colors = PAAD_annot_colors, fontsize = 11)
+pdf(width = 4, height = 4)
+barplot_proportions(decon_output = decon_tosti$PAAD,
+                    clinical_characteristics_vec = PAAD_meta$tumor_moffitt)
+dev.off()
 
 tosti_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$PAAD,
                                                clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade,
@@ -272,11 +281,20 @@ baron_yang_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$Yang,
                                                                                      #stage = Yang_meta$`Stage:ch1`, 
                                                                                      row.names = rownames(Yang_meta)),
                                                fontsize = 11)
+pdf(width = 3, height = 3)
+barplot_proportions(decon_output = decon_baron$Yang,
+                    clinical_characteristics_vec = Yang_meta$`grading:ch1`)
+dev.off()
+
 tosti_yang_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Yang,
                                                clinical_characteristics = data.frame("grading" = Yang_meta$`grading:ch1`, 
                                                                                      #stage = Yang_meta$`Stage:ch1`, 
                                                                                      row.names = rownames(Yang_meta)),
                                                fontsize = 11)
+pdf(width = 3, height = 3)
+barplot_proportions(decon_output = decon_tosti$Yang,
+                    clinical_characteristics_vec = Yang_meta$`grading:ch1`)
+dev.off()
 
 
 Moffitt_mki67_thirds <- quantile(Moffitt_array_bulk["MKI67",], probs = seq(0, 1, 1/3))
@@ -294,30 +312,112 @@ baron_Moffitt_array_prop_heatmap <- heatmap_proportions(decon_output = decon_bar
                                                                                               "MKI67" = Moffitt_mki67,
                                                                                               row.names = rownames(Moffitt_array_meta)),
                                                         fontsize = 11, annotation_colors = Moffitt_annot_colors)
+pdf(width = 3, height = 3)
+barplot_proportions(decon_output = decon_baron$Moffitt_array,
+                    clinical_characteristics_vec = Moffitt_array_meta$tumor_subtype)
+dev.off()
+
 tosti_Moffitt_array_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Moffitt_array,
                                                         clinical_characteristics = data.frame("tumor_subtype" = Moffitt_array_meta$tumor_subtype, 
                                                                                               "MKI67" = Moffitt_mki67,
                                                                                               row.names = rownames(Moffitt_array_meta)),
                                                         fontsize = 11, annotation_colors = Moffitt_annot_colors, clustering_method = "average")
-
+pdf(width = 3, height = 3)
+barplot_proportions(decon_output = decon_tosti$Moffitt_array,
+                    clinical_characteristics_vec = Moffitt_array_meta$tumor_subtype)
+dev.off()
 
 
 ## ANOVA: Guo, PAAD
 tosti_guo_anova <- correlation_analysis(decon_output = decon_tosti$Guo, 
                                         clinical_characteristic = Guo_meta$description)
-ggarrange(tosti_guo_anova$aov_plots[[1]], tosti_guo_anova$aov_plots[[2]], tosti_guo_anova$aov_plots[[3]], nrow = 1, ncol = 3) 
+#ggarrange(tosti_guo_anova$aov_plots[[1]], tosti_guo_anova$aov_plots[[2]], tosti_guo_anova$aov_plots[[3]], nrow = 1, ncol = 3) 
+pdf(width = 3.5, height = 5)
+tosti_guo_anova$aov_plots$sacinar + 
+  geom_signif(comparisons = tosti_guo_anova$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_guo_anova$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 3.5, height = 5)
+tosti_guo_anova$aov_plots$racinar + 
+  geom_signif(comparisons = tosti_guo_anova$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_guo_anova$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 3.5, height = 5)
+tosti_guo_anova$aov_plots$mductal +  
+  geom_signif(comparisons = tosti_guo_anova$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_guo_anova$comparison_list)*0.05),0.05))
+dev.off()
+
 tosti_guo_anova2 <- correlation_analysis(decon_output = decon_tosti$Guo, 
                                          clinical_characteristic = as.character(Guo_mki67))
+
 
 tosti_paad_anova1 <- correlation_analysis(decon_output = decon_tosti$PAAD, 
                                          clinical_characteristic = PAAD_meta$tumor_moffitt)
 ggarrange(tosti_paad_anova1$aov_plots$racinar, tosti_paad_anova1$aov_plots$ductal, nrow = 1, ncol = 2)
+pdf(width = 5, height = 5)
+tosti_paad_anova1$aov_plots$racinar + 
+  geom_signif(comparisons = tosti_paad_anova1$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_paad_anova1$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 5, height = 5)
+tosti_paad_anova1$aov_plots$ductal + 
+  geom_signif(comparisons = tosti_paad_anova1$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_paad_anova1$comparison_list)*0.05),0.05)) 
+dev.off()
+
+
 tosti_paad_anova2 <- correlation_analysis(decon_output = decon_tosti$PAAD, 
                                           clinical_characteristic = PAAD_meta$tumor_bailey)
 ggarrange(tosti_paad_anova2$aov_plots$sacinar, tosti_paad_anova2$aov_plots$racinar, tosti_paad_anova2$aov_plots$mductal, nrow = 2, ncol = 2)
+pdf(width = 5, height = 5)
+tosti_paad_anova2$aov_plots$sacinar +
+  geom_signif(comparisons = tosti_paad_anova2$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_paad_anova2$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 5, height = 5)
+tosti_paad_anova2$aov_plots$racinar + 
+  geom_signif(comparisons = tosti_paad_anova2$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_paad_anova2$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 5, height = 5)
+tosti_paad_anova2$aov_plots$mductal + 
+  geom_signif(comparisons = tosti_paad_anova2$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_paad_anova2$comparison_list)*0.05),0.05)) 
+dev.off()
+
+
 tosti_paad_anova3 <- correlation_analysis(decon_output = decon_tosti$PAAD, 
                                           clinical_characteristic = PAAD_meta$tumor_collisson)
 ggarrange(tosti_paad_anova3$aov_plots$sacinar, tosti_paad_anova3$aov_plots$racinar, tosti_paad_anova3$aov_plots$mductal, nrow = 1, ncol = 3)
+pdf(width = 3.5, height = 5)
+tosti_paad_anova3$aov_plots$sacinar + 
+  geom_signif(comparisons = tosti_paad_anova3$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_paad_anova3$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 3.5, height = 5)
+tosti_paad_anova3$aov_plots$racinar + 
+  geom_signif(comparisons = tosti_paad_anova3$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_paad_anova3$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 3.5, height = 5)
+tosti_paad_anova3$aov_plots$mductal +  
+  geom_signif(comparisons = tosti_paad_anova3$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(tosti_paad_anova3$comparison_list)*0.05),0.05))
+dev.off()
+
+
 tosti_paad_anova4 <- correlation_analysis(decon_output = decon_tosti$PAAD, 
                                           clinical_characteristic = PAAD_meta$neoplasm_histologic_grade)
 ggarrange(tosti_paad_anova4$aov_plots$sacinar, tosti_paad_anova4$aov_plots$racinar, tosti_paad_anova4$aov_plots$mductal, nrow = 1, ncol = 3)
@@ -329,6 +429,19 @@ ggarrange(tosti_paad_anova5$aov_plots$sacinar, tosti_paad_anova5$aov_plots$mduct
 ensemble_guo_anova <- correlation_analysis(decon_output = guo_ensemble, 
                                         clinical_characteristic = Guo_meta$description)
 ggarrange(ensemble_guo_anova$aov_plots$acinar, ensemble_guo_anova$aov_plots$ductal) 
+pdf(width = 5, height = 5)
+ensemble_guo_anova$aov_plots$acinar + 
+  geom_signif(comparisons = ensemble_guo_anova$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(ensemble_guo_anova$comparison_list)*0.05),0.05)) 
+dev.off()
+pdf(width = 5, height = 5)
+ensemble_guo_anova$aov_plots$ductal + 
+  geom_signif(comparisons = ensemble_guo_anova$comparison_list, 
+              map_signif_level=TRUE, tip_length = 0,
+              y_position = seq(1,(1+length(ensemble_guo_anova$comparison_list)*0.05),0.05)) 
+dev.off()
+
 ensemble_guo_anova2 <- correlation_analysis(decon_output = guo_ensemble, 
                                          clinical_characteristic = as.character(Guo_mki67))
 ggarrange(ensemble_guo_anova2$aov_plots$acinar, ensemble_guo_anova2$aov_plots$ductal) 

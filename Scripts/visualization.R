@@ -28,13 +28,18 @@ heatmap_proportions <- function(decon_output, clinical_characteristics = NA, ...
 
 barplot_proportions <- function(decon_output, clinical_characteristics_vec){
   # clinical_characteristics_vec is a character vector of length = nrow(decon_output$decon_res$prop.est.mvw)
+
   decon_res <- decon_output$decon_res$prop.est.mvw
+  if(any(is.na(clinical_characteristics_vec))){
+    decon_res <- decon_res[- which(is.na(clinical_characteristics_vec)),]
+    clinical_characteristics_vec <- clinical_characteristics_vec[-which(is.na(clinical_characteristics_vec))]
+  }
   decon_res_molten <- reshape2::melt(decon_res)
   decon_res_molten <- cbind(decon_res_molten, rep(clinical_characteristics_vec, ncol(decon_res)))
   colnames(decon_res_molten) <- c("sample", "cell_type", "value", "clinical_characteristic")
   
   barplot_proportions <- ggplot(decon_res_molten, aes(fill = cell_type, y = value, 
-                                                      x = clinical_characteristic)) +
+                                                      x = clinical_characteristic)) + theme_bw() +
     geom_bar(position = "fill", stat = "identity")
   
   return(barplot_proportions)
