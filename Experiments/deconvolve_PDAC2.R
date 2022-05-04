@@ -21,8 +21,8 @@ rownames(Flowers_meta) <- colnames(Flowers_bulk)
 Flowers_meta$COO <- sapply(rownames(Flowers_meta), function(x) strsplit(x, split = "\\.")[[1]][1])
 rownames(Flowers_bulk) <- toupper(rownames(Flowers_bulk))
 
-bulk_list <- list("Flowers" = Flowers_bulk)
-bulk_meta_list <- list("Flowers" = Flowers_meta)
+bulk_list <- list("Flowers2" = Flowers_bulk)
+bulk_meta_list <- list("Flowers2" = Flowers_meta)
 
 qc_baron_sc <- readRDS(file = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/qc_baron_exo.RDS")
 qc_segerstolpe_sc <- readRDS(file = "~/Masterthesis/CancerDeconvolution/Data/SingleCell/Segerstolpe_qc_exo.RDS")
@@ -34,7 +34,7 @@ reps <- 1000
 ncores <- 15
 cts <- c("alpha", "beta", "gamma", "delta", "acinar", "ductal")
 cts_tosti <- c("sacinar", "racinar", "iacinar", "ductal", "mductal", "alpha", "beta", "gamma", "delta")
-
+###
 ###
 res_path_baron <- "~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Baron"
 decon_baron <- lapply(1:length(bulk_list), function(x) {
@@ -66,16 +66,51 @@ decon_tosti <- lapply(1:length(bulk_list),
 names(decon_tosti) <- names(bulk_list)
 ###
 ###
-baron_flowers_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$Flowers,
-                                                  clinical_characteristics = data.frame("COO" = Flowers_meta$COO,
-                                                                                        row.names= rownames(Flowers_meta)))
-baron_flowers_prop_bar <- barplot_proportions(decon_output = decon_baron$Flowers,
-                                                  clinical_characteristics = data.frame("COO" = Flowers_meta$COO,
-                                                                                        row.names= rownames(Flowers_meta)))
+sc_list <- list("Baron" = qc_baron_sc$sc.eset.qc, 
+                "Segerstolpe" = qc_segerstolpe_sc$sc.eset.qc, 
+                "Lawlor" = qc_lawlor_sc$sc.eset.qc)
+res_path_ensemble <- "~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Ensemble"
+flowers_ensemble <- Calculate_pvalue(nrep = reps, ncores = ncores, bulk_data = bulk_list$Flowers2,
+                                     bulk_meta = bulk_meta_list$Flowers2, sc_data = sc_list, cell_types = cts,
+                                     ensemble = TRUE, multiple_donors = c(TRUE, TRUE, FALSE))
+saveRDS(flowers_ensemble, file = paste(res_path_ensemble, "/", names(bulk_list)[x], "_decon.RDS", sep = ""))
 
-tosti_flowers_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Flowers,
+decon_ensemble <- lapply(1:length(bulk_list), 
+                         function(x) readRDS(file = paste(res_path_ensemble, "/", names(bulk_list)[x], 
+                                                          "_decon.RDS", sep = "")))
+names(decon_ensemble) <- names(bulk_list)
+###
+###
+#baron_flowers_prop_heatmap <- 
+pdf()
+  heatmap_proportions(decon_output = decon_baron$Flowers2,
                                                   clinical_characteristics = data.frame("COO" = Flowers_meta$COO,
                                                                                         row.names= rownames(Flowers_meta)))
-tosti_flowers_prop_bar <- barplot_proportions(decon_output = decon_tosti$Flowers,
-                                              clinical_characteristics = data.frame("COO" = Flowers_meta$COO,
-                                                                                    row.names= rownames(Flowers_meta)))
+dev.off()
+baron_flowers_anova <- correlation_analysis(decon_output = decon_baron$Flowers2, 
+                                            clinical_characteristic = Flowers_meta$COO)
+# baron_flowers_prop_bar <- barplot_proportions(decon_output = decon_baron$Flowers,
+#                                                   clinical_characteristics = data.frame("COO" = Flowers_meta$COO,
+#                                                                                         row.names= rownames(Flowers_meta)))
+pdf()
+#tosti_flowers_prop_heatmap <- 
+  heatmap_proportions(decon_output = decon_tosti$Flowers2,
+                                                  clinical_characteristics = data.frame("COO" = Flowers_meta$COO,
+                                                                                        row.names= rownames(Flowers_meta)))
+dev.off()
+tosti_flowers_anova <- correlation_analysis(decon_output = decon_tosti$Flowers2, 
+                                            clinical_characteristic = Flowers_meta$COO)
+# tosti_flowers_prop_bar <- barplot_proportions(decon_output = decon_tosti$Flowers,
+#                                               clinical_characteristics = data.frame("COO" = Flowers_meta$COO,
+#                                                                                     row.names= rownames(Flowers_meta)))
+
+pdf()
+heatmap_proportions(decon_output = decon_ensemble$Flowers2,
+                    clinical_characteristics = data.frame("COO" = Flowers_meta$COO,
+                                                          row.names= rownames(Flowers_meta)))
+dev.off()
+ensemble_flowers_anova <- correlation_analysis(decon_output = decon_ensemble$Flowers2, 
+                                               clinical_characteristic = Flowers_meta$COO)
+# tosti_flowers_prop_bar <- barplot_proportions(decon_output = decon_tosti$Flowers,
+#                                               clinical_characteristics = data.frame("COO" = Flowers_meta$COO,
+#   

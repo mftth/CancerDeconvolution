@@ -27,11 +27,11 @@ Guo_meta <- readRDS("~/Masterthesis/Data/Bulk/Guo/Guo_metadata.RDS")
 Moffitt_array_bulk <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_array_bulk.RDS")
 Moffitt_array_meta <- readRDS("~/Masterthesis/Data/Bulk//Moffitt/Moffitt_array_metadata.RDS")
 ## 7 samples; survival; tumor grading; RNA-seq (mouse)
-Flowers_bulk <- readRDS("~/Masterthesis/Data/Bulk/Flowers/Flowers_bulk.RDS")
-Flowers_meta <- readRDS("~/Masterthesis/Data/Bulk/Flowers/Flowers_metadata.RDS")
-rownames(Flowers_meta) <- colnames(Flowers_bulk)
-Flowers_meta$COO <- sapply(rownames(Flowers_meta), function(x) strsplit(x, split = "\\.")[[1]][1])
-rownames(Flowers_bulk) <- toupper(rownames(Flowers_bulk))
+#Flowers_bulk <- readRDS("~/Masterthesis/Data/Bulk/Flowers/Flowers_bulk.RDS")
+#Flowers_meta <- readRDS("~/Masterthesis/Data/Bulk/Flowers/Flowers_metadata.RDS")
+#rownames(Flowers_meta) <- colnames(Flowers_bulk)
+#Flowers_meta$COO <- sapply(rownames(Flowers_meta), function(x) strsplit(x, split = "\\.")[[1]][1])
+#rownames(Flowers_bulk) <- toupper(rownames(Flowers_bulk))
 
 bulk_list <- list("PAAD" = PAAD_bulk,
                   "Yang" = Yang_bulk,
@@ -39,16 +39,16 @@ bulk_list <- list("PAAD" = PAAD_bulk,
                   #"Janky" = Janky_bulk,
                   #"Kirby" = Kirby_bulk,
                   #"Moffitt_seq" = Moffitt_seq_bulk,
-                  "Moffitt_array" = Moffitt_array_bulk,
-                  "Flowers" = Flowers_bulk)
+                  "Moffitt_array" = Moffitt_array_bulk)
+                  #"Flowers" = Flowers_bulk)
 bulk_meta_list <- list("PAAD" = PAAD_meta,
                        "Yang" = Yang_meta,
                        "Guo" = Guo_meta,
                        #"Janky" = Janky_meta,
                        #"Kirby" = Kirby_meta,
                        #"Moffitt_seq" = Moffitt_seq_meta,
-                       "Moffitt_array" = Moffitt_array_meta,
-                       "Flowers" = Flowers_meta)
+                       "Moffitt_array" = Moffitt_array_meta)
+                       #"Flowers" = Flowers_meta)
 
 res_path_baron <- "~/Masterthesis/CancerDeconvolution/Results/PDAC_deconvolution/Baron"
 decon_baron <- lapply(1:length(bulk_list), 
@@ -153,7 +153,7 @@ PAAD_meta$tumor_bailey <- hayashi_PAAD_meta$tumor_bailey[hayashi_idx]
 
 
 ## visualize p-values
-technology = c("RNA-seq", "microarray", "RNA-seq", "microarray", "RNA-seq")
+technology = c("RNA-seq", "microarray", "RNA-seq", "microarray")
 baron_pval_boxplot_spearman <- boxplot_pvalue(decon_output_list = decon_baron,
                                               pvalue_type = "Spearman", technology = technology) + 
   ggtitle("Reference: Baron et al.") 
@@ -198,8 +198,10 @@ decon_baron$Guo_ensemble <- guo_ensemble
 baron_pval_boxplot_rmsd <- boxplot_pvalue(decon_output_list = decon_baron,
                                           pvalue_type = "RMSD", technology = c(technology, "RNA-seq")) + 
   ggtitle("Reference: Baron et al.") + theme(plot.title = element_text(size=12))
-ggarrange(baron_pval_boxplot_rmsd, tosti_pval_boxplot_rmsd, common.legend = TRUE) 
 
+pdf(onefile = FALSE, width = 7, height = 5)
+ggarrange(baron_pval_boxplot_rmsd, tosti_pval_boxplot_rmsd, common.legend = TRUE) 
+dev.off()
 
 
 ## visualize cell type props
@@ -227,13 +229,21 @@ tosti_Guo_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$Guo,
                                                                                     "MKI67" = Guo_mki67,
                                                                                     row.names = rownames(Guo_meta)),
                                               annotation_colors = guo_annot_colors, fontsize = 11)
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_tosti$Guo, clinical_characteristic_vec = Guo_meta$description) 
+dev.off()
 ensemble_Guo_prop_heatmap <- heatmap_proportions(decon_output = guo_ensemble,
                                                  clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
                                                                                        "MKI67" = Guo_mki67,
                                                                                        row.names = rownames(Guo_meta)),
                                                  annotation_colors = guo_annot_colors, fontsize = 11,
                                                  clustering_method = "ward.D2")
-
+pdf(width = 5, height = 5)
+umap_plot(decon_output = guo_ensemble, clinical_characteristic_vec = Guo_meta$description) 
+dev.off()
+# pdf(width = 5, height = 5)
+# umap_plot(decon_output = guo_ensemble, clinical_characteristic_vec = Guo_mki67) 
+# dev.off()
 # tosti_Guo_boxplot_prop <- boxplot_proportions(decon_output = decon_tosti$Guo,
 #                                               clinical_characteristics_vec = Guo_meta$description,
 #                                               cell_types = c("sacinar", "mductal", "racinar")) + 
@@ -266,7 +276,7 @@ barplot_proportions(decon_output = decon_tosti$PAAD,
                     clinical_characteristics_vec = PAAD_meta$tumor_moffitt)
 dev.off()
 
-tosti_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$PAAD,
+tosti_PAAD_prop_heatmap <-   heatmap_proportions(decon_output = decon_tosti$PAAD,
                                                clinical_characteristics = data.frame("grading" = PAAD_meta$neoplasm_histologic_grade,
                                                                                      "Moffitt" = PAAD_meta$tumor_moffitt,
                                                                                      "Collisson" = PAAD_meta$tumor_collisson,
@@ -274,6 +284,15 @@ tosti_PAAD_prop_heatmap <- heatmap_proportions(decon_output = decon_tosti$PAAD,
                                                                                      "MKI67" = PAAD_mki67,
                                                                                      row.names = rownames(PAAD_meta)), 
                                                clustering_method = "ward.D2", annotation_colors = PAAD_annot_colors, fontsize = 11)
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_tosti$PAAD, clinical_characteristic_vec = PAAD_meta$tumor_moffitt) 
+dev.off()
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_tosti$PAAD, clinical_characteristic_vec = PAAD_meta$tumor_collisson) #+ stat_ellipse()
+dev.off()
+pdf(width = 6, height = 6)
+umap_plot(decon_output = decon_tosti$PAAD, clinical_characteristic_vec = PAAD_meta$tumor_bailey) 
+dev.off()
 
 
 baron_yang_prop_heatmap <- heatmap_proportions(decon_output = decon_baron$Yang,
@@ -457,10 +476,12 @@ tosti_guo_survival <- survival_analysis(decon_output = decon_tosti$Guo, OS = Guo
                                         clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
                                                                               "MKI67" = as.character(Guo_mki67),
                                                                               row.names = rownames(Guo_meta)))
+pdf(width = 8, height = 6)
 ggpar(tosti_guo_survival$single_kp$tumor_subtype, 
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
       xlab = "Time in months") # + guides(colour = guide_legend(nrow = 3))
+dev.off()
 ensemble_guo_survival <- survival_analysis(decon_output = guo_ensemble, OS = Guo_OS, censor = Guo_Zensur, 
                                            clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
                                                                               "MKI67" = as.character(Guo_mki67),
@@ -481,19 +502,24 @@ tosti_PAAD_survival <- survival_analysis(decon_output = decon_tosti$PAAD,
                                                                                 "Collisson" = PAAD_meta$tumor_collisson,
                                                                                 "MKI67" = as.character(PAAD_mki67),
                                                                                 row.names = rownames(PAAD_meta)))
+pdf(width = 8, height = 6)
 ggpar(tosti_PAAD_survival$single_kp$Moffitt, 
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
-      xlab = "Time in months")
+      xlab = "Time in days")
+dev.off()
+pdf(width = 8, height = 6)
 ggpar(tosti_PAAD_survival$single_kp$grading, 
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
-      xlab = "Time in months")
+      xlab = "Time in days")
+dev.off()
+pdf(width = 8, height = 6)
 ggpar(tosti_PAAD_survival$single_kp$MKI67, 
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
-      xlab = "Time in months")
-
+      xlab = "Time in days")
+dev.off()
 
 
 ## ML analysis (Guo-ENSEMBLE, Guo-Tosti, PAAD-Tosti)

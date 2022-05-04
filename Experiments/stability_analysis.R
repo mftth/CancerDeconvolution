@@ -27,10 +27,10 @@ set.seed(25)
 
 ## add noise differently via for loop
 add_noise_iteratively <- function(matr, times){
-  uniform_noise <- lapply(1:times, function(x) matrix(runif(nrow(matr)*ncol(matr), 
-                                                            min = 5, max = 500),nrow=nrow(matr)))
-  #uniform_noise <- lapply(1:times, function(x) matrix(rnorm(nrow(matr)*ncol(matr), 
-  #                                                         mean = 4, sd = 8),nrow=nrow(matr)))
+  #uniform_noise <- lapply(1:times, function(x) matrix(runif(nrow(matr)*ncol(matr), 
+  #                                                          min = 5, max = 500),nrow=nrow(matr)))
+  uniform_noise <- lapply(1:times, function(x) matrix(rnorm(nrow(matr)*ncol(matr), 
+                                                           mean = 0, sd = sample(c(0.25,0.5,0.75,1), 1)*4),nrow=nrow(matr)))
   
   added_noise <- list()
   for (i in 1:times) {
@@ -63,6 +63,10 @@ pseudo_bulk_data_noise <- add_noise_iteratively(matr = pseudo_bulk_data, times =
 names(pseudo_bulk_data_noise) <- c(paste("000", 1:9, sep = ""), paste("00", 10:99, sep = ""), paste("0", 100:999, sep = ""), "1000")
 pseudo_bulk_data_noise_red <- pseudo_bulk_data_noise[c(1,seq(50, 1000, 50))]
 
+pseudo_bulk_data_noise2 <- add_noise_iteratively(matr = pseudo_bulk_data, times = 100)
+names(pseudo_bulk_data_noise2) <- c(paste("00", 1:9, sep = ""), paste("0", 10:99, sep = ""), "100")
+pseudo_bulk_data_noise_red2 <- pseudo_bulk_data_noise2[c(1,seq(5, 100, 5))]
+
 #######################################
 ## for each matrix (i.e. original and noised ones) perform decon with framework
 pseudo_decon <- Calculate_pvalue(nrep = 500, ncores = 15, silent = FALSE, bulk_data = pseudo_bulk_data,
@@ -71,13 +75,13 @@ pseudo_decon <- Calculate_pvalue(nrep = 500, ncores = 15, silent = FALSE, bulk_d
                                  ensemble = FALSE, multiple_donors = TRUE)
 
 
-pseudo_decon_noise <- lapply(pseudo_bulk_data_noise_red, 
+pseudo_decon_noise2 <- lapply(pseudo_bulk_data_noise_red2, 
                              function(x) Calculate_pvalue(nrep = 500, ncores = 15, silent = FALSE, bulk_data = x,
                                                           bulk_meta = pseudo_bulk$pseudo_eset@phenoData@data,
                                                           sc_data = qc_baron$sc.eset.qc, cell_types = cts,
                                                           ensemble = FALSE, multiple_donors = TRUE))
 pseudo_decon_all <- list("original" = pseudo_decon)
-pseudo_decon_all <- c(pseudo_decon_all, pseudo_decon_noise)
+pseudo_decon_all <- c(pseudo_decon_all, pseudo_decon_noise2)
 #names(pseudo_decon_all) <- c("original", as.character(1:50))
 
 ## df: v1 = iteration, v2 = sample, v3 = pvalue
@@ -184,7 +188,7 @@ mad_scdc_plot <- ggplot(mad_scdc, aes(x=variable, y=value)) + theme_bw() +
   geom_boxplot() + ylab("SCDC mAD") +  xlab("noise iteration") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-save.image("~/Masterthesis/Workspaces/stability_analysis.RData")
+save.image("~/Masterthesis/Workspaces/stability_analysis2.RData")
 
 #######################################
 ## for each matrix (i.e. original and noised ones) perform decon with cibersort/bseqsc

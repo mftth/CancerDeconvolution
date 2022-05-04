@@ -219,8 +219,10 @@ Schmitz_prop_heatmap <- heatmap_proportions(decon_output = decon_dlbcl$Schmitz,
 ## ANOVA
 chapuy_anova_coo <- correlation_analysis(decon_output = decon_dlbcl$Chapuy, 
                                          clinical_characteristic = Chapuy_meta$COO_byGEP)
-chapuy_coo_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_dlbcl$Chapuy,
                              clinical_characteristic_vec = Chapuy_meta$COO_byGEP)
+dev.off()
 #chapuy_anova_cluster <- correlation_analysis(decon_output = decon_dlbcl$Chapuy, 
 #                                             clinical_characteristic = Chapuy_meta$Cluster)
 #chapuy_cluster_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
@@ -231,12 +233,16 @@ chapuy_treatment_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
                                    clinical_characteristic_vec = Chapuy_meta$`R-CHOP-like Chemo`)
 chapuy_anova_ipi <- correlation_analysis(decon_output = decon_dlbcl$Chapuy, 
                                          clinical_characteristic = as.character(Chapuy_meta$IPI))
-chapuy_ipi_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_dlbcl$Chapuy,
                              clinical_characteristic_vec = Chapuy_meta$IPI)
+dev.off()
 chapuy_anova_bcellstate <- correlation_analysis(decon_output = decon_dlbcl$Chapuy, 
                                                 clinical_characteristic = as.character(Chapuy_meta$ecotyper_bcell_state))
-chapuy_bcellstate_umap <- umap_plot(decon_output = decon_dlbcl$Chapuy,
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_dlbcl$Chapuy,
                                     clinical_characteristic_vec = Chapuy_meta$ecotyper_bcell_state)
+dev.off()
 
 
 schleich_anova_treatment <- correlation_analysis(decon_output = decon_dlbcl$Schleich, 
@@ -245,12 +251,16 @@ schleich_treatment_umap <- umap_plot(decon_output = decon_dlbcl$Schleich,
                                      clinical_characteristic_vec = Schleich_meta$treatment) 
 schleich_anova_treatmentoutcome <- correlation_analysis(decon_output = decon_dlbcl$Schleich, 
                                                         clinical_characteristic = Schleich_meta$treatment_response)
-schleich_treatmentoutcome_umap <- umap_plot(decon_output = decon_dlbcl$Schleich,
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_dlbcl$Schleich,
                                             clinical_characteristic_vec = Schleich_meta$treatment_response) 
+dev.off()
 schleich_anova_bcellstate <- correlation_analysis(decon_output = decon_dlbcl$Schleich, 
                                                   clinical_characteristic = Schleich_meta$ecotyper_bcell_state)
-schleich_bcellstate_umap <- umap_plot(decon_output = decon_dlbcl$Schleich,
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_dlbcl$Schleich,
                                       clinical_characteristic_vec = Schleich_meta$ecotyper_bcell_state) 
+dev.off()
 pdf(width = 5, height = 5)
 schleich_anova_treatmentoutcome$aov_plots[[1]] + 
   geom_signif(comparisons = schleich_anova_treatmentoutcome$comparison_list, 
@@ -267,16 +277,22 @@ dev.off()
 
 schmitz_anova_coo <- correlation_analysis(decon_output = decon_dlbcl$Schmitz, 
                                           clinical_characteristic = Schmitz_meta$Gene.Expression.Subgroup)
-schmitz_coo_umap <- umap_plot(decon_output = decon_dlbcl$Schmitz,
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_dlbcl$Schmitz,
                               clinical_characteristic_vec = Schmitz_meta$Gene.Expression.Subgroup) 
+dev.off()
 schmitz_anova_ipi <- correlation_analysis(decon_output = decon_dlbcl$Schmitz, 
                                           clinical_characteristic = as.character(Schmitz_meta$IPI.Group))
-schmitz_ipi_umap <- umap_plot(decon_output = decon_dlbcl$Schmitz,
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_dlbcl$Schmitz,
                               clinical_characteristic_vec = Schmitz_meta$IPI.Group)
+dev.off()
 schmitz_anova_bcellstate <- correlation_analysis(decon_output = decon_dlbcl$Schmitz, 
                                                  clinical_characteristic = Schmitz_meta$ecotyper_bcell_state)
-schmitz_bcellstate_umap <- umap_plot(decon_output = decon_dlbcl$Schmitz,
+pdf(width = 5, height = 5)
+umap_plot(decon_output = decon_dlbcl$Schmitz,
                                      clinical_characteristic_vec = Schmitz_meta$ecotyper_bcell_state)
+dev.off()
 pdf(width = 5, height = 5)
 schmitz_anova_ipi$aov_plots$ADR_OHT + 
   geom_signif(comparisons = schmitz_anova_ipi$comparison_list, 

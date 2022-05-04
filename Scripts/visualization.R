@@ -157,6 +157,11 @@ umap_plot <- function(decon_output, clinical_characteristic_vec, cell_types = NU
     decon_res <- decon_output$decon_res$prop.est.mvw
   }
   
+  if(any(is.na(clinical_characteristic_vec))){
+    decon_res <- decon_res[- which(is.na(clinical_characteristic_vec)),]
+    clinical_characteristic_vec <- clinical_characteristic_vec[-which(is.na(clinical_characteristic_vec))]
+  }
+  
   decon_umap <- umap(decon_res)
   decon_umap_df <- data.frame(decon_umap$layout, 
                               "clinical_characteristic" = clinical_characteristic_vec,
