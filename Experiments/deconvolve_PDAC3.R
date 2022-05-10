@@ -476,8 +476,8 @@ tosti_guo_survival <- survival_analysis(decon_output = decon_tosti$Guo, OS = Guo
                                         clinical_characteristics = data.frame("tumor_subtype" = Guo_meta$description,
                                                                               "MKI67" = as.character(Guo_mki67),
                                                                               row.names = rownames(Guo_meta)))
-pdf(width = 8, height = 6)
-ggpar(tosti_guo_survival$single_kp$tumor_subtype, 
+pdf(width = 8, height = 6, onefile = FALSE)
+ggpar(tosti_guo_survival$single_kp$tumor_subtype , 
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
       xlab = "Time in months") # + guides(colour = guide_legend(nrow = 3))
@@ -503,7 +503,7 @@ tosti_PAAD_survival <- survival_analysis(decon_output = decon_tosti$PAAD,
                                                                                 "MKI67" = as.character(PAAD_mki67),
                                                                                 row.names = rownames(PAAD_meta)))
 pdf(width = 8, height = 6)
-ggpar(tosti_PAAD_survival$single_kp$Moffitt, 
+ggpar(tosti_PAAD_survival$single_kp$Bailey, 
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
       xlab = "Time in days")
