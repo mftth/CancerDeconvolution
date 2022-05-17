@@ -477,7 +477,7 @@ tosti_guo_survival <- survival_analysis(decon_output = decon_tosti$Guo, OS = Guo
                                                                               "MKI67" = as.character(Guo_mki67),
                                                                               row.names = rownames(Guo_meta)))
 pdf(width = 8, height = 6, onefile = FALSE)
-ggpar(tosti_guo_survival$single_kp$tumor_subtype , 
+ggpar(tosti_guo_survival$single_kp$MKI67 , 
       font.main = c(12), font.x = c(14), font.y = c(14),
       font.caption = c(12), font.legend = c(12),font.tickslab = c(12), 
       xlab = "Time in months") # + guides(colour = guide_legend(nrow = 3))
