@@ -2,10 +2,7 @@
 ## compute power set of a set of cell types
 ## perform deconvolution for each subset of cell types
 ## observe differences in p-value and performance
-## ct_combi_list: set of cell type combinations
-## sub_ct_set: set of cell types, of which power set is computed. 
 ## For each suitable subset deconvolution is performed
-## ct_set: set of cell types, which should be added to each subset of sub_ct_set for deconvolution
 
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 

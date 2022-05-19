@@ -1,11 +1,5 @@
 ## Mastherthesis, Melanie Fattohi
 ## generate different plots for visualization of results of analyses
-## 1) survival plots in survival_analysis.R
-## 2) correlations plots (boxplots, heatmaps) in correlation_analysis.R
-## 3) cell type proportions plots (as heatmap or bar plots)
-## 4) heatmap correlation plots of marker genes annotated with cell type proportions and clinical characteristics
-## 5) ROC curve with AUC of ML analysis
-## 6) accuracy, sensitivity, specificity
 
 source("~/Masterthesis/CancerDeconvolution/Scripts/Permute_basis.R")
 library(ggplot2)
@@ -15,10 +9,12 @@ library(pROC)
 library(ggpubr)
 library(umap)
 
-## 3) cell type proportions plots (as heatmap or bar plots)
+## cell type proportions plots (as heatmap or bar plots)
 heatmap_proportions <- function(decon_output, clinical_characteristics = NA, ...){
-  # clinical char is dataframe (one or more) with rownames as meta data
-  # decon_output ist output von framework
+  ## decon_output: output of Calculate_pvalue
+  ## clinical_characteristics: data.frame with clinical variables with samples in rows as decon_output
+  ## ...: further input of pheatmap
+  
   heatmap_proportions <- pheatmap(decon_output$decon_res$prop.est.mvw,
                                   annotation_row = clinical_characteristics,
                                   show_rownames = FALSE, ...)
@@ -27,7 +23,8 @@ heatmap_proportions <- function(decon_output, clinical_characteristics = NA, ...
 }
 
 barplot_proportions <- function(decon_output, clinical_characteristics_vec){
-  # clinical_characteristics_vec is a character vector of length = nrow(decon_output$decon_res$prop.est.mvw)
+  ## decon_output: output of Calculate_pvalue
+  ## clinical_characteristics_vec: numeric or character vector of one clinical variable
 
   decon_res <- decon_output$decon_res$prop.est.mvw
   if(any(is.na(clinical_characteristics_vec))){
@@ -46,7 +43,10 @@ barplot_proportions <- function(decon_output, clinical_characteristics_vec){
 }
 
 boxplot_proportions <- function(decon_output, clinical_characteristics_vec, cell_types = NULL){
-  # clinical_characteristics_vec is a character vector of length = nrow(decon_output$decon_res$prop.est.mvw)
+  ## decon_output: output of Calculate_pvalue
+  ## clinical_characteristics_vec: numeric or character vector of one clinical variable
+  ## cell_types: character vector of cell types of interest
+  
   if(!is.null(cell_types)){
     decon_res <- decon_output$decon_res$prop.est.mvw[,cell_types]
   } else {
@@ -68,8 +68,9 @@ boxplot_proportions <- function(decon_output, clinical_characteristics_vec, cell
 
 ## p-value plot
 boxplot_pvalue <- function(decon_output_list, pvalue_type = "Spearman", technology = NULL){
-  ## decon_output_list = named list of multiple decon outputs, preferably of the same sc rna-seq dataset
-  ## pvalue_type = c("pearson", "spearman", "mad", "rmsd)
+  ## decon_output_list: named list of multiple decon outputs, preferably of the same scrna-seq dataset
+  ## pvalue_type: c("pearson", "spearman", "mad", "rmsd)
+  ## technology: vector of technologies used to create each bulk dataset
   
   if(is.null(names(decon_output_list))){
     stop("The list of deconvolution outputs has to be named!")
@@ -111,11 +112,18 @@ pval_all_plot <- ggplot(boxplot_df, aes(x=bulk_dataset, y=neg_log10_pvalue, fill
 return(pval_all_plot)
 }
 
-## 4) heatmap correlation plots of marker genes annotated with cell type proportions and clinical characteristics
+## heatmap correlation plots of marker genes annotated with cell type proportions and clinical characteristics
 heatmap_corr_genes <- function(decon_output = NULL, bulk_data, clinical_characteristics, cell_types = NULL,
                                marker_genes = NULL, colnames = FALSE, ...){
-  # decon_output has to be given if there are no marker genes. Otherwise it is not required
-  # clinical_characteristics has to be a data frame, having the colnames of bulk_data as rownames
+  ## decon_output: output of Calculate_pvalue
+  ## bulk_data: data.frame used for deconvolution
+  ## clinical_characteristics: data.frame with clinical variables with samples in rows as decon_output
+  ## cell_types: character vector of cell types of interest
+  ## marker_genes: vector of marker gene names
+  ## colnames: should sample names be printed in the heatmap?
+  ## ...: further input of pheatmap
+  
+  ## decon_output has to be given if there are no marker genes. Otherwise it is not required
   
   if(is.null(marker_genes) && is.null(decon_output)){
     stop("Heatmap can only be generated if marker genes are given or computed from a deconvolution result!")
@@ -150,7 +158,10 @@ heatmap_corr_genes <- function(decon_output = NULL, bulk_data, clinical_characte
 ## for clustering of bulk samples based on predicted cell type proportions
 ## do the cell type proportions separate the clinical characteristics into distinct clusters?
 umap_plot <- function(decon_output, clinical_characteristic_vec, cell_types = NULL){
-  # clinical_characteristics_vec is a character vector of length = nrow(decon_output$decon_res$prop.est.mvw)
+  ## decon_output: output of Calculate_pvalue
+  ## clinical_characteristics_vec: numeric or character vector of one clinical variable
+  ## cell_types: character vector of cell types of interest
+  
   if(!is.null(cell_types)){
     decon_res <- decon_output$decon_res$prop.est.mvw[,cell_types]
   } else {
@@ -175,9 +186,14 @@ umap_plot <- function(decon_output, clinical_characteristic_vec, cell_types = NU
 }
 
 
-## 5) ROC curve with AUC of ML analysis
+## ROC curve with AUC of ML analysis
 ## only for classification
 roc_curve <- function(labels, predictions, levels, ...){
+  ## labels: observed labels of clinical variable
+  ## predictions: predicted labels of variable
+  ## levels: levels of clinical variable
+  ## ...: further input of plot.roc
+  
   roc_obj <- roc(labels, ordered(predictions, levels = levels))
   roc_curve_plot <- plot.roc(roc_obj, print.auc = TRUE, ...)
   
@@ -185,11 +201,13 @@ roc_curve <- function(labels, predictions, levels, ...){
 }
 
 
-## 6) accuracy, sensitivity, specificity
+## accuracy, sensitivity, specificity
 ## only for classification
 ## visualize these three metrics for each model
 ## models are given in a named list
 barplot_ML_evaluation <- function(model_evaluation_list){
+  ## model_evaluation_list: list of evaluations of models
+  
   if(is.null(names(model_evaluation_list))){
     names(model_evaluation_list) <- sapply(1:length(model_evaluation_list), 
                                            function(x) paste0("model", x, collapse = ""))
@@ -244,6 +262,9 @@ barplot_ML_evaluation <- function(model_evaluation_list){
 
 boxplot_ML_sd <- function(ml_model_list, folds = 5, repeats = 10, levels = NULL){
   ## ml_model_list is a list of models given by train_ML_model$rf_model_* function
+  ## folds: number of folds used for cv
+  ## repeatds: number of repetitions performed for cv
+  
   if(is.null(names(ml_model_list))){
     names(ml_model_list) <- sapply(1:length(ml_model_list), 
                                            function(x) paste0("model", x, collapse = ""))

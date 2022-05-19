@@ -9,11 +9,18 @@
 ## output:
 ### qc'ed scRNA-seq dataset saved in path+name
 
-source("~/SCDC/SCDC/R/Basic_Functions.R")
-source("~/SCDC/SCDC/R/Deconvolution.R")
+source("~/Masterthesis/CancerDeconvolution/Scripts/SCDC_Basic_Functions.R")
+source("~/Masterthesis/CancerDeconvolution/Scripts/SCDC_Deconvolution.R")
 library(pheatmap)
 
 Quality_control <- function(sc_data, sc_meta, sc_path, cell_types, multiple_donors, ...){
+  ## sc_data: data.frame with genes as rownames, cells as column names
+  ## sc_meta: data.frame with cells as rownames, meta data in columns
+  ## sc_path: string, path to save the resulting scRNA-seq dataset
+  ## cell_types: character vector of cell types
+  ## multiple_donors: boolean. are multiple subjects present in the scRNA-seq dataset?
+  ## ...: other input for SCDC
+  
   message("Creating ExpressionSet object of the scRNA-seq dataset ..")
   
   if(ncol(sc_data) >= nrow(sc_meta)){

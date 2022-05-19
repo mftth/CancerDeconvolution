@@ -1,18 +1,12 @@
 ## Mastherthesis, Melanie Fattohi
-## permute basis for calculation of p-value
-## 1) scdc_qc
-## 2) scdc_basis
-## 3) scdc_prop
-## 4) calc coeff
-## 5) basis permutieren, save it
-## 6) scdc_prop 
-## 7) calc coeff
-## 8) repeat steps 5-7 500x
-## 9) calc p-val
+## estimate basis
+## apply deconvolution with SCDC
+## evaluate deconvolution
+## perform permutation test for calculation of p-value
 
-source("~/SCDC/SCDC/R/Basic_Functions.R")
-source("~/SCDC/SCDC/R/Deconvolution.R")
-source("~/SCDC/SCDC/R/ENSEMBLE.R")
+source("~/Masterthesis/CancerDeconvolution/Scripts/SCDC_Basic_Functions.R")
+source("~/Masterthesis/CancerDeconvolution/Scripts/SCDC_Deconvolution.R")
+source("~/Masterthesis/CancerDeconvolution/Scripts/SCDC_ENSEMBLE.R")
 
 library(parallel)
 library(robustbase)
@@ -36,13 +30,22 @@ library(robustbase)
 
 # write utility function that calcs the ensemble prediction with highest mean weight
 get_ensemble_res <- function(ensemble_output){
+  ## ensemble_output: output of SCDC_ENSEMBLE
   weights <- ensemble_output$w_table[1:5, 1:(ncol(ensemble_output$w_table)-4)]
   ensemble_res <- ensemble_output$prop.list[[which.max(colMeans(weights))]]
   return(ensemble_res)
 }
 
 Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types, ensemble, multiple_donors, ...) { 
-
+  ## bulk_data: data.frame with genes as rownames, samples as column names
+  ## bulk_meta: data.frame with samples as rownames, meta data in columns
+  ## sc_data: ESet object with scRNA-seq; output of Quality_control 
+  ## sc_basis: output of Create_basis
+  ## cell_types: character vector of cell types
+  ## ensemble: boolean. should the ENSEMBLE function be applied?
+  ## multiple_donors: boolean. are multiple subjects present in the scRNA-seq dataset?
+  ## ...: other input for SCDC
+  
   message("Creating ExpressionSet object of the bulk RNA-seq dataset ..")
   ## matching samples of bulk_data with samples of bulk_meta
   
@@ -68,9 +71,8 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
     } else {
       
       message("Performing deconvolution with ENSEMBLE ..")
-      #sc_list <- lapply(sc_data, function(x) x$sc.eset.qc)
       decon_res <- SCDC_ENSEMBLE(bulk.eset = bulk_eset, sc.eset.list = sc_data, sc.basis.list = sc_basis,
-                                 ct.varname = "cluster", sample = "sample", ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht -> make it soft coded
+                                 ct.varname = "cluster", sample = "sample", ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht 
                                  ct.sub =  cell_types, ...) 
       #decon_res <- calc_ens_res(ensemble_output =  decon_res)
       decon_res <- get_ensemble_res(ensemble_output =  decon_res)
@@ -86,14 +88,12 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
       
     } else {
       
-      #sc_data <- sc_data[[1]]
-      
       if(multiple_donors){
         
         message("Performing deconvolution of multiple donors with SCDC ..")  
         
         decon_res <- SCDC_prop(bulk.eset = bulk_eset, sc.eset = sc_data, sc.basis = sc_basis,
-                               ct.varname = "cluster", sample = "sample",  ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht -> make it soft coded
+                               ct.varname = "cluster", sample = "sample",  ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht
                                ct.sub =  cell_types, ...) 
         message("Done.")
         
@@ -102,7 +102,7 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
         message("Performing deconvolution of one donor with SCDC ..")  
         
         decon_res <- SCDC_prop_ONE(bulk.eset = bulk_eset, sc.eset = sc_data, sc.basis = sc_basis,
-                                   ct.varname = "cluster", sample = "sample", ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht -> make it soft coded
+                                   ct.varname = "cluster", sample = "sample", ## die können auch zu ... werden. dann ist man flexibel, was die spaltennamen angeht
                                    ct.sub =  cell_types, ...) 
         message("Done.")
         
@@ -117,6 +117,10 @@ Deconvolve_SCDC <- function(bulk_data, bulk_meta, sc_data, sc_basis, cell_types,
 
 
 Create_basis <- function(sc_data, cell_types, ensemble, multiple_donors){
+  ## sc_data: ESet object with scRNA-seq; output of Quality_control 
+  ## cell_types: character vector of cell types
+  ## ensemble: boolean. should the ENSEMBLE function be applied?
+  ## multiple_donors: boolean. are multiple subjects present in the scRNA-seq dataset?
   
   if(ensemble){
     
@@ -143,7 +147,9 @@ Create_basis <- function(sc_data, cell_types, ensemble, multiple_donors){
 
 
 get_test_statistics_vec <- function(bulk_data, decon_res){
-
+  ## bulk_data: data.frame with genes as rownames, samples as column names
+  ## decon_res: output of Deconvolve_SCDC
+  
   ## matching genes of bulk_data and scRNA-seq reference
   common_genes <- intersect(rownames(bulk_data), rownames(decon_res$basis.mvw))
   bulk_data_obs <- bulk_data[common_genes,]
@@ -158,13 +164,14 @@ get_test_statistics_vec <- function(bulk_data, decon_res){
   mad_vec <- colMedians(abs((bulk_data_est - bulk_data_obs) - median(bulk_data_est - bulk_data_obs))) # median absolute deviation
   rmsd_vec <- sqrt(colMeans((bulk_data_est - bulk_data_obs)^2))
   
-  
   test_statistics_vec <- list("pearson_vec" = pearson_vec, "spearman_vec" = spearman_vec,
                               "mad_vec" = mad_vec, "rmsd_vec" = rmsd_vec)
   return(test_statistics_vec)
 }
 
 get_marker_genes <- function(decon_res){
+  ## decon_res: output of Deconvolve_SCDC
+  
   quantiles <- sapply(1:ncol(decon_res$basis.mvw), function(x) quantile(decon_res$basis.mvw[,x], seq(0,1,0.01))[100])
   ## marker genes are genes with an expression greater than the 99%-quantile of each cell type
   marker_genes_ct <- lapply(1:length(quantiles), function(x) {
@@ -180,6 +187,15 @@ get_marker_genes <- function(decon_res){
 
 
 get_permuted_basis_statistics <- function(marker_genes, bulk_data, bulk_meta, sc_data, sc_basis, cell_types, ensemble, multiple_donors, ...){
+  ## marker_genes: output of get_marker_genes
+  ## bulk_data: data.frame with genes as rownames, samples as column names
+  ## bulk_meta: data.frame with samples as rownames, meta data in columns
+  ## sc_data: ESet object with scRNA-seq; output of Quality_control 
+  ## sc_basis: output of Create_basis
+  ## cell_types: character vector of cell types
+  ## ensemble: boolean. should the ENSEMBLE function be applied?
+  ## multiple_donors: boolean. are multiple subjects present in the scRNA-seq dataset?
+  ## ...: other input for SCDC
   
   if(!ensemble){
     sc_basis <- list(sc_basis)
@@ -220,6 +236,16 @@ get_permuted_basis_statistics <- function(marker_genes, bulk_data, bulk_meta, sc
 
 
 Calculate_pvalue <- function(nrep = 500, ncores = 5, silent = TRUE, bulk_data, bulk_meta, sc_data, cell_types, ensemble, multiple_donors, ...){
+  ## nrep: integer, number of permutations for the permutation test, default 500
+  ## ncores: integer, number of cores used for the permutation test, default 5
+  ## silent: boolean, verbose
+  ## bulk_data: data.frame with genes as rownames, samples as column names
+  ## bulk_meta: data.frame with samples as rownames, meta data in columns
+  ## sc_data: ESet object with scRNA-seq; output of Quality_control 
+  ## cell_types: character vector of cell types
+  ## ensemble: boolean. should the ENSEMBLE function be applied?
+  ## multiple_donors: boolean. are multiple subjects present in the scRNA-seq dataset?
+  ## ...: other input for SCDC
   
   ## Generate original basis matrix
   sc_basis <- Create_basis(sc_data = sc_data,  cell_types = cell_types, ensemble = ensemble, multiple_donors = multiple_donors)

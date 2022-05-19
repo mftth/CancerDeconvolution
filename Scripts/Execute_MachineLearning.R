@@ -13,6 +13,13 @@ library(skimr)
 
 
 train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "scale", classification = TRUE, feature_selection = TRUE){
+  ## trainData: output of prepare_decon_res (before or after splitting with caret)
+  ## preprocess: boolean. Should training data be pre-processed?
+  ## preprocess_method: if preprocess TRUE, which method should be applied. See caret for options
+  ## classification: boolean. TRUE for RF classification and FALSE for RF regression
+  ## feature_selection: boolean. TRUE for feature selection and FALSE for no feature selection
+  
+  
   ## descriptive statistics (necessary? kinda)
   skimmed <- skim(trainData)
   
@@ -105,6 +112,13 @@ train_ML_model <- function(trainData, preprocess = FALSE, preprocess_method = "s
 
 test_ML_model <- function(train_output, testData, truth_vec,  preprocess = FALSE, preprocess_method = "scale",
                           classification = TRUE, feature_selection = TRUE){ ## test data, aka hold out set
+  ## train_output: a model from the output of train_ML_model
+  ## testData: output of prepare_decon_res after splitting with caret
+  ## preprocess: boolean. Should training data be pre-processed? Preferably same choice as with train_ML_model
+  ## preprocess_method: if preprocess TRUE, which method should be applied. See caret for options. Preferably same choice as with train_ML_model
+  ## classification: boolean. TRUE for RF classification and FALSE for RF regression. Preferably same choice as with train_ML_model
+  ## feature_selection: boolean. TRUE for feature selection and FALSE for no feature selection. Preferably same choice as with train_ML_model
+  
   ## descriptive statistics
   skimmed <- skim(testData)
   

@@ -11,6 +11,9 @@ library(ggplot2)
 
 
 continuous_to_discrete <- function(con_vec, col_name){
+  ## con_vec: numeric vector
+  ## col_name: name of variable
+  
   dis_vec <- rep(NA, length(con_vec))
   dis_vec[which(con_vec <= median(con_vec))] <- paste0(col_name, "_low", collapse = "")
   dis_vec[which(con_vec > median(con_vec))] <- paste0(col_name, "_high", collapse = "")
@@ -18,9 +21,11 @@ continuous_to_discrete <- function(con_vec, col_name){
 }
 
 survival_analysis <- function(decon_output, cell_types = NULL, OS, censor, clinical_characteristics, ...){
-  ## cell_types is vector of cell types of interest (i.e. those investigated in survival analysis)
-  ## OS is numeric, censor integer vector
-  ## visualize only those with p-value < 0.05
+  ## decon_output: output of Calculate_pvalue
+  ## cell_types: character vector of cell types of interest
+  ## OS: numeric with survival data
+  ## censor: integer vector with censoring
+  ## clinical_characteristics: data.frame with clinical variables with samples in rows as decon_output
   
   if(!is.data.frame(clinical_characteristics)){
     #clinical_characteristics <- as.data.frame(clinical_characteristics)

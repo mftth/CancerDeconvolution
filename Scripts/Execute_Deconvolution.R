@@ -1,16 +1,15 @@
 ## Mastherthesis, Melanie Fattohi
-## execute deconvolution with SCDC
-## input is same input as for Quality_Control(), Deconvolve_SCDC() and/or Calculate_pvalue()
-## need decision about if QC should take place or no and if p-value should be calculated or not 
-## ouput is new SCDC "model", deconvolution result and possibly p-value of deconvolution
 
-source("~/SCDC/SCDC/R/Basic_Functions.R")
+source("~/Masterthesis/CancerDeconvolution/Scripts/SCDC_Basic_Functions.R")
 #source("~/SCDC/SCDC/R/Deconvolution.R")
 
 
 prepare_decon_res <- function(p_value, decon_res, clinical_char, observed_statistics = NULL){
-  # p_value : boolean. True, if p-value was estimated; False, if p-value was not estimated
-  # observed_statistics : output of get_test_statistics_vec. only necessary, if p-value = FALSE 
+  ## p_value : boolean. True, if p-value was estimated; False, if p-value was not estimated
+  ## decon_res: output of Calculate_pvalue
+  ## clinical_char: numeric or character vector of one clinical variable
+  ## observed_statistics : output of get_test_statistics_vec. only necessary, if p-value = FALSE 
+  
   if (p_value){
     decon_res_prepped <- as.data.frame(cbind(decon_res$decon_res$prop.est.mvw, decon_res$statistics_observed$pearson_vec, 
                                              decon_res$statistics_observed$spearman_vec, decon_res$statistics_observed$mad_vec,

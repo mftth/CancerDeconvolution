@@ -1,8 +1,12 @@
 ## Mastherthesis, Melanie Fattohi
-## correlation analysis 
-## test if predicted cell type proportions are correlated with clinically relevant characteristics;
+## correlation analysis; ANOVA
+## test if predicted cell type proportions are correlated with clinically relevant characteristics
 
 correlation_analysis <- function(decon_output, cell_types = NULL, clinical_characteristic){
+  ## decon_output: output of Calculate_pvalue
+  ## cell_types: character vector of cell types
+  ## clinical_characteristic: numeric or character vector of one clinical variable
+  
   ct_prop <- data.frame(decon_output$decon_res$prop.est.mvw)
   
   if(any(is.na(clinical_characteristic))){
